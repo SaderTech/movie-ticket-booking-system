@@ -5,7 +5,24 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/infra/eureka-service/pom.xml" />
+        <option value="$PROJECT_DIR$/infra/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/services/user-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/movie-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/cinema-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/showtime-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/booking-service/pom.xml" />
+        <option value="$PROJECT_DIR$/common-web/pom.xml" />
+        <option value="$PROJECT_DIR$/shared/common-web/pom.xml" />
+        <option value="$PROJECT_DIR$/infra/config-server/pom.xml" />
+        <option value="$PROJECT_DIR$/services/notification-service/pom.xml" />
       </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/common-web/pom.xml" />
+      </set>
     </option>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="21" project-jdk-type="JavaSDK">
