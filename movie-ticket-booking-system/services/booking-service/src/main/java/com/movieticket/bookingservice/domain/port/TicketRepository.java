@@ -1,0 +1,4 @@
+package com.movieticket.bookingservice.domain.port;
+
+public interface TicketRepository {
+}
