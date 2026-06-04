@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # 1. Cơ sở dữ liệu PostgreSQL dùng chung cho các Service
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: movie_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root  # Cả nhóm thống nhất dùng pass này lúc Dev
+      # Cấu hình tự động tạo nhiều database khi chạy lần đầu
+      POSTGRES_MULTIPLE_DATABASES: user_db,movie_db,cinema_db,showtime_db,booking_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/init-scripts:/docker-entrypoint-initdb.d # Thư mục chứa script tạo DB
+    restart: always
+
+  # 2. pgAdmin (Giao diện web để xem và quản lý Database trực quan)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: movie_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@movie.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres-db
+    restart: always
+
+  # 3. Redis (Dùng để Booking Service khóa ghế tạm thời chống trùng)
+  redis-cache:
+    image: redis:7-alpine
+    container_name: movie_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  # 4. Zookeeper (Điều phối cho Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: movie_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  # 5. Kafka Broker (Dùng để các Service bắn Event cho nhau, ví dụ: Đặt vé xong -> Bắn mail)
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: movie_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+  postgres_data:

@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      routes:
+        - id: user-service-route
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/**
+
+        - id: movie-service-route
+          uri: lb://MOVIE-SERVICE
+          predicates:
+            - Path=/api/movies/**
+
+        - id: cinema-service-route
+          uri: lb://CINEMA-SERVICE
+          predicates:
+            - Path=/api/cinemas/**
+
+        - id: showtime-service-route
+          uri: lb://SHOWTIME-SERVICE
+          predicates:
+            - Path=/api/showtimes/**
+
+        - id: booking-service-route
+          uri: lb://BOOKING-SERVICE
+          predicates:
+            - Path=/api/bookings/**
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
