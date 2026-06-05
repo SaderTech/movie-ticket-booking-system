@@ -1,4 +1,4 @@
-package com.movieticket.cinemaservice.infrastructure.config;
+package com.movieticket.cinemaservice.config;
 
 public class RedisConfig {
 }

@@ -1,4 +1,4 @@
-package com.movieticket.cinemaservice.interfaces.rest;
+package com.movieticket.cinemaservice.api;
 
 public class CinemaController {
 }

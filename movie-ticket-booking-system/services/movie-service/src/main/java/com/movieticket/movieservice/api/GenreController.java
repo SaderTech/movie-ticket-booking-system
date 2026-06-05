@@ -1,4 +1,4 @@
-package com.movieticket.movieservice.interfaces.rest;
+package com.movieticket.movieservice.api;
 
 public class GenreController {
 }
