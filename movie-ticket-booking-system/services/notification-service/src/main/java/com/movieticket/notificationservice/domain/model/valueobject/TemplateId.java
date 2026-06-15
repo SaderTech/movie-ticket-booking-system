@@ -1,4 +1,4 @@
 package com.movieticket.notificationservice.domain.model.valueobject;
 
-public class TemplateId {
+public enum TemplateId {
 }
