@@ -1,0 +1,4 @@
+package com.movieticket.cinemaservice.api.dto.request;
+
+public class CreateHallRequest {
+}
