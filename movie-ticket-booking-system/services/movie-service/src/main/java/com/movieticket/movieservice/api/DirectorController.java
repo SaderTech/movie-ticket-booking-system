@@ -1,7 +1,7 @@
 package com.movieticket.movieservice.api;
 
-import com.movieticket.movieservice.api.dto.request.CreateGenreRequest;
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
+import com.movieticket.movieservice.api.dto.request.CreateDirectorRequest;
+import com.movieticket.movieservice.api.dto.response.PersonResponse;
 import com.movieticket.movieservice.application.MovieApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,22 +17,22 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/genres")
-public class GenreController {
+@RequestMapping("/api/directors")
+public class DirectorController {
 
     private final MovieApplicationService movieApplicationService;
 
     @PostMapping
-    public ResponseEntity<GenreResponse> createGenre(
-            @Valid @RequestBody CreateGenreRequest request
+    public ResponseEntity<PersonResponse> createDirector(
+            @Valid @RequestBody CreateDirectorRequest request
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(movieApplicationService.createGenre(request));
+                .body(movieApplicationService.createDirector(request));
     }
 
     @GetMapping
-    public ResponseEntity<List<GenreResponse>> getGenres() {
-        return ResponseEntity.ok(movieApplicationService.getAllGenres());
+    public ResponseEntity<List<PersonResponse>> getDirectors() {
+        return ResponseEntity.ok(movieApplicationService.getAllDirectors());
     }
 }
