@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.math.BigDecimal;
 
-public record CreateCinemaRequest(
+public record UpdateCinemaRequest(
         @NotBlank(message = "Cinema name is required")
         String name,
 
