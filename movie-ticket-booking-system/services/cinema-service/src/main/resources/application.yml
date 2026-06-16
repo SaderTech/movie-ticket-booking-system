@@ -5,39 +5,50 @@ spring:
   application:
     name: cinema-service
 
-  # Cấu hình PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/cinema_db
     username: postgres
     password: admin
     driver-class-name: org.postgresql.Driver
 
-  # Cấu hình JPA / Hibernate
   jpa:
     hibernate:
       ddl-auto: update
+    open-in-view: false
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-  # Cấu hình Redis Cache
+  cache:
+    type: simple
+
   data:
     redis:
-      host: localhost
-      port: 6379
-  cache:
-    type: redis
+      repositories:
+        enabled: false
 
-# Cấu hình Eureka Client
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
 eureka:
-  instance:
-    hostname: localhost
-    lease-expiration-duration-in-seconds: 10
-    lease-renewal-interval-in-seconds: 3
   client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  health:
+    redis:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
