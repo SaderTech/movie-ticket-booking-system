@@ -13,7 +13,7 @@ eureka:
     fetchRegistry: false
   server:
     enableSelfPreservation: false
-    evictionIntervalTimerInMs: 5000
+    evictionIntervalTimerInMs: 10000
 
 management:
   endpoints:
