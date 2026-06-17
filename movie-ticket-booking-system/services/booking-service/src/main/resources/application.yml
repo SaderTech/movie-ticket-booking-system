@@ -4,10 +4,6 @@ server:
 spring:
   application:
     name: booking-service
-
-  autoconfigure:
-    exclude: org.redisson.spring.starter.RedissonAutoConfigurationV2
-
   datasource:
     url: jdbc:postgresql://localhost:5432/booking_db
     username: postgres
@@ -28,6 +24,9 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  autoconfigure:
+    exclude: org.redisson.spring.starter.RedissonAutoConfigurationV2
 
   data:
     redis:
@@ -63,8 +62,14 @@ spring:
             connect-timeout: 5000
             read-timeout: 5000
             logger-level: BASIC
+          MOVIE-SERVICE:
+            url: http://localhost:8082
 
 eureka:
+  instance:
+    hostname: localhost
+    lease-expiration-duration-in-seconds: 10
+    lease-renewal-interval-in-seconds: 30
   client:
     enabled: false
     register-with-eureka: false

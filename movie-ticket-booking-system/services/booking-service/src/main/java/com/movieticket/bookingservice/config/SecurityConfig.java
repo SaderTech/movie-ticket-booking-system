@@ -13,7 +13,7 @@ public class SecurityConfig {
     public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilterRegistration(JwtAuthFilter filter) {
         FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        registration.addUrlPatterns("/api/v1/bookings/*");
+        registration.addUrlPatterns("/api/bookings/*");
         return registration;
     }
 }

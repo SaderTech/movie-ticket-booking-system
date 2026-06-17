@@ -11,3 +11,12 @@ eureka:
   client:
     registerWithEureka: false
     fetchRegistry: false
+  server:
+    enableSelfPreservation: false
+    evictionIntervalTimerInMs: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, env
