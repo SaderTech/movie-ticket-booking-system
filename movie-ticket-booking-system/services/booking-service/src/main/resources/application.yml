@@ -5,13 +5,86 @@ spring:
   application:
     name: booking-service
 
+  autoconfigure:
+    exclude: org.redisson.spring.starter.RedissonAutoConfigurationV2
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/booking_db
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000
+      repositories:
+        enabled: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        spring.json.type.mapping: >
+          seatHoldCreatedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.SeatHoldCreatedEvent,
+          seatHoldExpiredEvent:com.movieticket.bookingservice.infrastructure.kafka.event.SeatHoldExpiredEvent,
+          bookingConfirmedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingConfirmedEvent,
+          ticketBookedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.TicketBookedEvent,
+          bookingCancelledEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingCancelledEvent,
+          paymentRefundRequestedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.PaymentRefundRequestedEvent
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 5000
+            read-timeout: 5000
+            logger-level: BASIC
+
 eureka:
-  instance:
-    hostname: localhost
-    lease-expiration-duration-in-seconds: 10
-    lease-renewal-interval-in-seconds: 3
   client:
-    register-with-eureka: true
-    fetch-registry: true
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+app:
+  redis:
+    enabled: false
+  kafka:
+    enabled: false
+  jwt:
+    secret: dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
+
+logging:
+  level:
+    com.movieticket.bookingservice: DEBUG
+    org.springframework.kafka: INFO
+    org.redisson: INFO
+    org.hibernate.SQL: DEBUG
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
