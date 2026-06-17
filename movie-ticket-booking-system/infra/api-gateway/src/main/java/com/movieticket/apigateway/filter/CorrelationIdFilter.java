@@ -27,7 +27,9 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
 
         if (correlationId == null) {
             correlationId = UUID.randomUUID().toString();
-            log.debug("Generated new Correlation ID: {}", correlationId);
+            log.info("=> [Gateway Correlation] Tạo mới Correlation ID: {}", correlationId);
+        } else {
+            log.info("=> [Gateway Correlation] Nhận Correlation ID từ Client: {}", correlationId);
         }
 
         final String finalCorrelationId = correlationId;
@@ -49,5 +51,4 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         return GatewayConstants.ORDER_CORRELATION_FILTER;
     }
-
 }
