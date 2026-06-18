@@ -14,6 +14,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 public class ApiGatewayApplication {
 
     public static void main(String[] args) {
+        System.out.println("DEBUG JWT_SECRET: " + System.getenv("JWT_SECRET"));
         SpringApplication.run(ApiGatewayApplication.class, args);
     }
 

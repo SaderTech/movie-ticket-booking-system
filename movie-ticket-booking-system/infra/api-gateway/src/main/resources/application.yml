@@ -68,6 +68,10 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
 management:
   endpoints:
     web:

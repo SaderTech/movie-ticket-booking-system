@@ -1,40 +1,72 @@
 package com.movieticket.apigateway.filter;
 
 import com.movieticket.apigateway.utils.GatewayConstants;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.SecretKey;
+
 @Component
 @Slf4j
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
+    // Lấy secret key từ file application.yml
+    @Value("${app.jwt.secret}")
+    private String secret;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // 1. Lấy JWT từ header Authorization
-        String jwt = exchange.getRequest()
-                .getHeaders()
-                .getFirst(GatewayConstants.HEADER_AUTHOR);
+        String authHeader = exchange.getRequest().getHeaders().getFirst(GatewayConstants.HEADER_AUTHOR);
 
-        log.info("===> [Gateway Auth] Nhận được Token từ Client: {}", jwt);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.warn("=> [Gateway Auth] Request không có JWT, từ chối truy cập!");
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
 
-        // 2. Mock xác thực JWT, sau đó gắn thông tin user vào request header
-        ServerHttpRequest mutatedRequest = exchange.getRequest()
-                .mutate()
-                .headers(httpHeaders -> {
-                    httpHeaders.add(GatewayConstants.HEADER_USER_ID, "10");
-                    httpHeaders.add(GatewayConstants.HEADER_USER_ROLES, "['ROLE_ADMIN']");
-                    httpHeaders.add(GatewayConstants.HEADER_USER_NAME, "quanghao@gmail.com");
-                })
-                .build();
+        String token = authHeader.substring(7);
 
-        // 3. Chuyển request đã có header xuống service con
-        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+        try {
+            // 1. DÙNG SECRET KEY ĐỂ GIẢI MÃ VÀ XÁC THỰC CHỮ KÝ THẬT
+            SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            // 2. BÓC TÁCH DỮ LIỆU ĐỘNG TỪ BÊN TRONG TOKEN
+            String userId = claims.get("userId") != null ? claims.get("userId").toString() : "";
+            // Giả sử email được lưu trong Subject của JWT
+            String userEmail = claims.getSubject() != null ? claims.getSubject() : "";
+
+            log.info("===> [Gateway Auth] Xác thực thành công UserID: {} | Email: {}", userId, userEmail);
+
+            // 3. ĐÍNH KÈM THÔNG TIN THẬT VÀO HEADER ĐỂ CHUYỂN XUỐNG DƯỚI
+            ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                    .header(GatewayConstants.HEADER_USER_ID, userId)
+                    .header(GatewayConstants.HEADER_USER_NAME, userEmail)
+                    .build();
+
+            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+
+        } catch (Exception e) {
+            log.error("=> [Gateway Auth] Token giả mạo hoặc đã hết hạn: {}", e.getMessage());
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
     }
 
     @Override

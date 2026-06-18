@@ -24,60 +24,28 @@ import java.util.Map;
 @Slf4j
 public class JwtAuthFilter implements Filter {
 
-    private final SecretKey secretKey;
-    private final ObjectMapper objectMapper;
-
-    public JwtAuthFilter(@Value("${app.jwt.secret:}") String secret,
-                         ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-        if (secret != null && !secret.isBlank()) {
-            this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
-        } else {
-            this.secretKey = null;
-        }
-    }
-
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        String authHeader = httpRequest.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
-            return;
-        }
+        // Lấy thông tin thật do Gateway đã giải mã và đính vào Header
+        String userIdStr = httpRequest.getHeader("X-User-ID");
+        String userEmail = httpRequest.getHeader("X-User-Email");
 
-        String token = authHeader.substring(7);
-
-        if (secretKey == null) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        try {
-            Jws<Claims> jws = Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token);
-
-            Claims claims = jws.getPayload();
-            Object userIdObj = claims.get("userId");
-            Long userId = null;
-            if (userIdObj instanceof Number) {
-                userId = ((Number) userIdObj).longValue();
+        if (userIdStr != null && !userIdStr.isBlank()) {
+            try {
+                Long userId = Long.parseLong(userIdStr);
+                // Lưu vào Request Context để Controller của Booking lấy ra dùng
+                httpRequest.setAttribute("userId", userId);
+                httpRequest.setAttribute("username", userEmail);
+                log.debug("=> [Booking Filter] Đã thiết lập Context cho UserID: {}", userId);
+            } catch (NumberFormatException e) {
+                log.warn("=> [Booking Filter] UserID không hợp lệ: {}", userIdStr);
             }
-            httpRequest.setAttribute("userId", userId);
-            httpRequest.setAttribute("username", claims.getSubject());
-            httpRequest.setAttribute("roles", claims.get("roles"));
-            chain.doFilter(request, response);
-        } catch (JwtException e) {
-            log.warn("Invalid JWT token: {}", e.getMessage());
-            httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            httpResponse.setContentType("application/json");
-            objectMapper.writeValue(httpResponse.getOutputStream(),
-                    Map.of("success", false, "message", "Invalid or expired token"));
         }
+
+        chain.doFilter(request, response);
     }
 }
