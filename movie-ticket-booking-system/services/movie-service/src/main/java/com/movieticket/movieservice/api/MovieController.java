@@ -5,8 +5,10 @@ import com.movieticket.movieservice.api.dto.request.UpdateMovieRequest;
 import com.movieticket.movieservice.api.dto.response.MovieResponse;
 import com.movieticket.movieservice.application.MovieApplicationService;
 import com.movieticket.movieservice.domain.enums.MovieStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/movies")
@@ -71,4 +74,21 @@ public class MovieController {
      * Không dùng hard delete Movie vì sau này Showtime Service sẽ tham chiếu Movie.id.
      * Thay vào đó dùng PATCH /api/movies/{id}/end để chuyển status sang ENDED.
      */
+
+
+    @GetMapping("/demo-receive")
+    public String receiveDemo(HttpServletRequest request) {
+        String correlationId = request.getHeader("X-Correlation-ID");
+        String userId = request.getHeader("X-User-ID");
+        String userEmail = request.getHeader("X-User-Email");
+
+        log.info("============== KẾT QUẢ PROPAGATION ==============");
+        log.info("=> [2. Movie Service] Nhận lệnh Feign thành công!");
+        log.info("=> Mã định danh hệ thống (Correlation ID): {}", correlationId);
+        log.info("=> Mã người dùng (User ID): {}", userId);
+        log.info("=> Email người dùng: {}", userEmail);
+        log.info("=================================================");
+
+        return "[Movie Service phản hồi] Đã nhận được mã: " + correlationId;
+    }
 }
