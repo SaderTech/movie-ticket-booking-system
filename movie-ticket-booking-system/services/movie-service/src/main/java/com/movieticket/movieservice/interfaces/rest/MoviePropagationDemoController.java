@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/movies")
 @Slf4j
-public class MovieController {
+public class MoviePropagationDemoController {
+
     @GetMapping("/demo-receive")
     public String receiveDemo(HttpServletRequest request) {
         String correlationId = request.getHeader("X-Correlation-ID");

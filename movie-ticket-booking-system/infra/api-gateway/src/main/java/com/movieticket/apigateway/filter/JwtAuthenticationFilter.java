@@ -16,20 +16,25 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // 1. Trích xuất JWT Token từ Header "Authorization" do Client gửi lên
-        String jwt = exchange.getRequest().getHeaders().getFirst(GatewayConstants.HEADER_AUTHOR);
+        // 1. Lấy JWT từ header Authorization
+        String jwt = exchange.getRequest()
+                .getHeaders()
+                .getFirst(GatewayConstants.HEADER_AUTHOR);
 
         log.info("===> [Gateway Auth] Nhận được Token từ Client: {}", jwt);
 
-        // 2. Giả lập xác thực (Mock): Tự động đính kèm thông tin User vào Request Headers
-        ServerHttpRequest muteRequest = exchange.getRequest().mutate().headers((httpHeaders -> {
-            httpHeaders.add(GatewayConstants.HEADER_USER_ID, "10");
-            httpHeaders.add(GatewayConstants.HEADER_USER_ROLES, "['ROLE_ADMIN']");
-            httpHeaders.add(GatewayConstants.HEADER_USER_NAME, "quanghao@gmail.com"); // Đổi sang email của bạn để demo cho chất
-        })).build();
+        // 2. Mock xác thực JWT, sau đó gắn thông tin user vào request header
+        ServerHttpRequest mutatedRequest = exchange.getRequest()
+                .mutate()
+                .headers(httpHeaders -> {
+                    httpHeaders.add(GatewayConstants.HEADER_USER_ID, "10");
+                    httpHeaders.add(GatewayConstants.HEADER_USER_ROLES, "['ROLE_ADMIN']");
+                    httpHeaders.add(GatewayConstants.HEADER_USER_NAME, "quanghao@gmail.com");
+                })
+                .build();
 
-        // 3. Tiếp tục chuyển tiếp Request đã có sẵn thông tin User xuống các Service con
-        return chain.filter(exchange.mutate().request(muteRequest).build());
+        // 3. Chuyển request đã có header xuống service con
+        return chain.filter(exchange.mutate().request(mutatedRequest).build());
     }
 
     @Override
