@@ -16,7 +16,7 @@ public class GetGenreByIdUseCase {
     private final GenreRepository genreRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "genres", key = "#id")
+    @Cacheable(value = "genres", key = "#p0")
 
     public GenreResponse execute(Long id) {
         Genre genre = genreRepository.findById(id)

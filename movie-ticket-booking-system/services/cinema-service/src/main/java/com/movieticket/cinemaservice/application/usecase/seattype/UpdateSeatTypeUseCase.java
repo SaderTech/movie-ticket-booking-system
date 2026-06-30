@@ -20,7 +20,7 @@ public class UpdateSeatTypeUseCase {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = "seat-types", key = "#id"),
+            @CacheEvict(value = "seat-types", key = "#p0"),
             @CacheEvict(value = "seat-types", key = "'all'")
     })
     public SeatTypeResponse execute(Long id, UpdateSeatTypeRequest request) {

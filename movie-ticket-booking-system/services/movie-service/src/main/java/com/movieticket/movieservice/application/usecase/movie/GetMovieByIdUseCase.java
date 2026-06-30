@@ -15,7 +15,7 @@ public class GetMovieByIdUseCase {
     private final MovieReferenceResolver movieReferenceResolver;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "#id")
+    @Cacheable(value = "movies", key = "#p0")
 
     public MovieResponse execute(Long id) {
         Movie movie = movieReferenceResolver.findMovieById(id);

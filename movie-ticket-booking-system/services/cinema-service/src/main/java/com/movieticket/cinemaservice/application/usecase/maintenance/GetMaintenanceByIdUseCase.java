@@ -16,7 +16,7 @@ public class GetMaintenanceByIdUseCase {
     private final HallMaintenanceRepository hallMaintenanceRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "maintenances", key = "#id")
+    @Cacheable(value = "maintenances", key = "#p0")
 
     public HallMaintenanceResponse execute(Long id) {
         HallMaintenance maintenance = hallMaintenanceRepository.findById(id)

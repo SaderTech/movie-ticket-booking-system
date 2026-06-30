@@ -16,7 +16,7 @@ public class GetCinemaByIdUseCase {
     private final CinemaRepository cinemaRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "cinemas", key = "#id")
+    @Cacheable(value = "cinemas", key = "#p0")
 
     public CinemaResponse execute(Long id) {
         Cinema cinema = cinemaRepository.findById(id)

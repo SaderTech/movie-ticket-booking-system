@@ -16,7 +16,7 @@ public class GetSeatByIdUseCase {
     private final SeatRepository seatRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "seats", key = "#id")
+    @Cacheable(value = "seats", key = "#p0")
     public SeatResponse execute(Long id) {
         Seat seat = seatRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Seat not found with id: " + id));

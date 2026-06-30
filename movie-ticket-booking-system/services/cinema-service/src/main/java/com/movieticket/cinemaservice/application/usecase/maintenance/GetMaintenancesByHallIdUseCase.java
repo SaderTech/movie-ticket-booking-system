@@ -16,7 +16,7 @@ public class GetMaintenancesByHallIdUseCase {
     private final HallMaintenanceRepository hallMaintenanceRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "maintenances", key = "'hall:' + #hallId")
+    @Cacheable(value = "maintenances", key = "'hall:' + #p0")
 
     public List<HallMaintenanceResponse> execute(Long hallId) {
         return hallMaintenanceRepository.findByHall_IdOrderByStartTimeDesc(hallId)

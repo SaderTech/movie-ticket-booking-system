@@ -16,7 +16,7 @@ public class GetDirectorByIdUseCase {
     private final DirectorRepository directorRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "directors", key = "#id")
+    @Cacheable(value = "directors", key = "#p0")
 
     public PersonResponse execute(Long id) {
         Director director = directorRepository.findById(id)

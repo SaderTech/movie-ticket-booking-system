@@ -16,7 +16,7 @@ public class SearchMoviesByTitleUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'search:' + (#keyword == null || #keyword.isBlank() ? 'all' : #keyword.trim().toLowerCase())")
+    @Cacheable(value = "movies", key = "'search:' + (#p0 == null || #p0.isBlank() ? 'all' : #p0.trim().toLowerCase())")
 
     public List<MovieResponse> execute(String keyword) {
         if (keyword == null || keyword.isBlank()) {

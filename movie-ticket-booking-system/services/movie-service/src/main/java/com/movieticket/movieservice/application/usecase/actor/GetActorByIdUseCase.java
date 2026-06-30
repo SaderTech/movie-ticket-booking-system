@@ -16,7 +16,7 @@ public class GetActorByIdUseCase {
     private final ActorRepository actorRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "actors", key = "#id")
+    @Cacheable(value = "actors", key = "#p0")
 
     public PersonResponse execute(Long id) {
         Actor actor = actorRepository.findById(id)

@@ -16,7 +16,7 @@ public class GetSeatsByHallIdUseCase {
     private final SeatRepository seatRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "seats", key = "'hall:' + #hallId")
+    @Cacheable(value = "seats", key = "'hall:' + #p0")
 
     public List<SeatResponse> execute(Long hallId) {
         return seatRepository.findByHall_IdOrderByRowNameAscSeatNumberAsc(hallId)

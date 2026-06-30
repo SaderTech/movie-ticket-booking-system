@@ -17,7 +17,7 @@ public class GetAllCinemasUseCase {
     private final CinemaRepository cinemaRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "cinemas", key = "#status == null ? 'all' : #status.name()")
+    @Cacheable(value = "cinemas", key = "#p0 == null ? 'all' : #p0.name()")
 
     public List<CinemaResponse> execute(CinemaStatus status) {
         if (status != null) {

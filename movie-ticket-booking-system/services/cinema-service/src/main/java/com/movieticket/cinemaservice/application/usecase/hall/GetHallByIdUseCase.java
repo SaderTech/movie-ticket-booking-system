@@ -16,7 +16,7 @@ public class GetHallByIdUseCase {
     private final HallRepository hallRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "halls", key = "#id")
+    @Cacheable(value = "halls", key = "#p0")
 
     public HallResponse execute(Long id) {
         Hall hall = hallRepository.findById(id)

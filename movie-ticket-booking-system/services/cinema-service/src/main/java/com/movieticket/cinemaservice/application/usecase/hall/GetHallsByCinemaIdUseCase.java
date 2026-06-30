@@ -15,7 +15,7 @@ public class GetHallsByCinemaIdUseCase {
     private final HallRepository hallRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "halls", key = "'cinema:' + #cinemaId")
+    @Cacheable(value = "halls", key = "'cinema:' + #p0")
 
     public List<HallResponse> execute(Long cinemaId) {
         return hallRepository.findByCinema_Id(cinemaId)
