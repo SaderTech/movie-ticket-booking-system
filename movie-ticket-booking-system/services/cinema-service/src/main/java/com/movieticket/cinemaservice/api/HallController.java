@@ -3,7 +3,10 @@ package com.movieticket.cinemaservice.api;
 import com.movieticket.cinemaservice.api.dto.request.CreateHallRequest;
 import com.movieticket.cinemaservice.api.dto.request.UpdateHallRequest;
 import com.movieticket.cinemaservice.api.dto.response.HallResponse;
-import com.movieticket.cinemaservice.application.CinemaApplicationService;
+import com.movieticket.cinemaservice.application.usecase.hall.CreateHallUseCase;
+import com.movieticket.cinemaservice.application.usecase.hall.GetHallByIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.hall.GetHallsByCinemaIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.hall.UpdateHallUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +20,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HallController {
 
-    private final CinemaApplicationService cinemaApplicationService;
+    private final CreateHallUseCase createHallUseCase;
+    private final GetHallByIdUseCase getHallByIdUseCase;
+    private final GetHallsByCinemaIdUseCase getHallsByCinemaIdUseCase;
+    private final UpdateHallUseCase updateHallUseCase;
 
     @PostMapping
     public ResponseEntity<HallResponse> createHall(
@@ -25,26 +31,28 @@ public class HallController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(cinemaApplicationService.createHall(request));
+                .body(createHallUseCase.execute(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<HallResponse> getHallById(@PathVariable Long id) {
-        return ResponseEntity.ok(cinemaApplicationService.getHallById(id));
+    public ResponseEntity<HallResponse> getHallById(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(getHallByIdUseCase.execute(id));
     }
 
     @GetMapping
     public ResponseEntity<List<HallResponse>> getHallsByCinemaId(
-            @RequestParam Long cinemaId
+            @RequestParam(name = "cinemaId") Long cinemaId
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.getHallsByCinemaId(cinemaId));
+        return ResponseEntity.ok(getHallsByCinemaIdUseCase.execute(cinemaId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<HallResponse> updateHall(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateHallRequest request
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.updateHall(id, request));
+        return ResponseEntity.ok(updateHallUseCase.execute(id, request));
     }
 }

@@ -3,7 +3,10 @@ package com.movieticket.cinemaservice.api;
 import com.movieticket.cinemaservice.api.dto.request.CreateCinemaRequest;
 import com.movieticket.cinemaservice.api.dto.request.UpdateCinemaRequest;
 import com.movieticket.cinemaservice.api.dto.response.CinemaResponse;
-import com.movieticket.cinemaservice.application.CinemaApplicationService;
+import com.movieticket.cinemaservice.application.usecase.cinema.CreateCinemaUseCase;
+import com.movieticket.cinemaservice.application.usecase.cinema.GetAllCinemasUseCase;
+import com.movieticket.cinemaservice.application.usecase.cinema.GetCinemaByIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.cinema.UpdateCinemaUseCase;
 import com.movieticket.cinemaservice.domain.enums.CinemaStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +21,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CinemaController {
 
-    private final CinemaApplicationService cinemaApplicationService;
+    private final CreateCinemaUseCase createCinemaUseCase;
+    private final GetAllCinemasUseCase getAllCinemasUseCase;
+    private final GetCinemaByIdUseCase getCinemaByIdUseCase;
+    private final UpdateCinemaUseCase updateCinemaUseCase;
 
     @PostMapping
     public ResponseEntity<CinemaResponse> createCinema(
@@ -26,26 +32,28 @@ public class CinemaController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(cinemaApplicationService.createCinema(request));
+                .body(createCinemaUseCase.execute(request));
     }
 
     @GetMapping
     public ResponseEntity<List<CinemaResponse>> getCinemas(
-            @RequestParam(required = false) CinemaStatus status
+            @RequestParam(name = "status", required = false) CinemaStatus status
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.getAllCinemas(status));
+        return ResponseEntity.ok(getAllCinemasUseCase.execute(status));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CinemaResponse> getCinemaById(@PathVariable Long id) {
-        return ResponseEntity.ok(cinemaApplicationService.getCinemaById(id));
+    public ResponseEntity<CinemaResponse> getCinemaById(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(getCinemaByIdUseCase.execute(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CinemaResponse> updateCinema(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateCinemaRequest request
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.updateCinema(id, request));
+        return ResponseEntity.ok(updateCinemaUseCase.execute(id, request));
     }
 }
