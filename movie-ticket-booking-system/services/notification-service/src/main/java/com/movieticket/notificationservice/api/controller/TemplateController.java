@@ -1,7 +1,7 @@
 package com.movieticket.notificationservice.api.controller;
 
-import com.movieticket.notificationservice.api.dto.CreateTemplateRequest;
-import com.movieticket.notificationservice.api.dto.TemplateResponse;
+import com.movieticket.notificationservice.api.dto.request.CreateTemplateRequest;
+import com.movieticket.notificationservice.api.dto.response.TemplateResponse;
 import com.movieticket.notificationservice.application.command.CreateTemplateCommand;
 import com.movieticket.notificationservice.application.usecase.CreateTemplateUseCase;
 import com.movieticket.notificationservice.application.usecase.ListTemplatesUseCase;
