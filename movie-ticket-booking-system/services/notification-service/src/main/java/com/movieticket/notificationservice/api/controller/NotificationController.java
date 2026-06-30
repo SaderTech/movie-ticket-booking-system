@@ -1,8 +1,8 @@
 package com.movieticket.notificationservice.api.controller;
 
-import com.movieticket.notificationservice.api.dto.NotificationLogResponse;
-import com.movieticket.notificationservice.api.dto.NotificationResponse;
-import com.movieticket.notificationservice.api.dto.SendNotificationRequest;
+import com.movieticket.notificationservice.api.dto.response.NotificationLogResponse;
+import com.movieticket.notificationservice.api.dto.response.NotificationResponse;
+import com.movieticket.notificationservice.api.dto.request.SendNotificationRequest;
 import com.movieticket.notificationservice.application.command.SendNotificationCommand;
 import com.movieticket.notificationservice.application.usecase.ListNotificationLogsUseCase;
 import com.movieticket.notificationservice.application.usecase.SendNotificationUseCase;
