@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,7 +37,18 @@ public class SeatType {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     public SeatType(String code, String name, String description) {
+        validateCode(code);
+        validateName(name);
+        this.code = code.trim().toUpperCase();
+        this.name = name;
+        this.description = description;
+    }
+
+    public void update(String code, String name, String description) {
         validateCode(code);
         validateName(name);
         this.code = code.trim().toUpperCase();
@@ -59,5 +71,11 @@ public class SeatType {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

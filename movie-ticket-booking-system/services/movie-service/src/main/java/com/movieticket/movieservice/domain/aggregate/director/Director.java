@@ -44,6 +44,13 @@ public class Director {
         this.birthDate = birthDate;
     }
 
+    public void update(String name, String biography, LocalDate birthDate) {
+        validateName(name);
+        this.name = name;
+        this.biography = biography;
+        this.birthDate = birthDate;
+    }
+
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Director name must not be blank");
