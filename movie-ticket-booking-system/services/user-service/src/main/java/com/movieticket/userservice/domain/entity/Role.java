@@ -1,18 +1,32 @@
 package com.movieticket.userservice.domain.entity;
 
+import lombok.Getter;
+
+import java.util.Objects;
+
+@Getter
 public class Role {
 
     private Long id;
 
-    private String name;
+    private String roleName;
 
-    private Role(){}
+    private String description;
 
-    public static Role create(String name){
+    private Role() {
+    }
+
+    public static Role create(
+            String roleName,
+            String description
+    ) {
+
+        Objects.requireNonNull(roleName);
 
         Role role = new Role();
 
-        role.name = name;
+        role.roleName = roleName.trim().toUpperCase();
+        role.description = description;
 
         return role;
     }

@@ -1,9 +1,9 @@
 package com.movieticket.userservice.application.dto.response;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 @Builder
 public class UserResponse {
 
@@ -15,7 +15,7 @@ public class UserResponse {
 
     private String fullName;
 
-    private String phoneNumber;
+    private String phone;
 
-    private String avatarUrl;
+    private String avatar;
 }

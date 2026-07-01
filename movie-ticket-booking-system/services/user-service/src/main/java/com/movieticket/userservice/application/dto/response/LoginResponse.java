@@ -1,19 +1,21 @@
 package com.movieticket.userservice.application.dto.response;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Value;
 
-@Data
+@Value
 @Builder
 public class LoginResponse {
 
-    private String accessToken;
+    String accessToken;
 
-    private String tokenType;
+    String tokenType;
 
-    private Long userId;
+    Long userId;
 
-    private String username;
+    String username;
 
-    private String email;
+    String email;
+
+    Long expiresIn;
 }

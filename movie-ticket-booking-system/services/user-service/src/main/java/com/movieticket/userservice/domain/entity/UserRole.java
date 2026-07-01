@@ -1,17 +1,21 @@
 package com.movieticket.userservice.domain.entity;
 
+import lombok.Getter;
+
+@Getter
 public class UserRole {
 
     private Long userId;
 
     private Long roleId;
 
-    private UserRole(){}
+    private UserRole() {
+    }
 
     public static UserRole create(
             Long userId,
             Long roleId
-    ){
+    ) {
 
         UserRole userRole = new UserRole();
 

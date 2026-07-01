@@ -1,5 +1,6 @@
 server:
   port: 8081
+
 spring:
   application:
     name: USER-SERVICE
@@ -14,6 +15,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
 
 eureka:
   client:

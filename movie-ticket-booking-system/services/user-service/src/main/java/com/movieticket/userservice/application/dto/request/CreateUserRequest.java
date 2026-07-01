@@ -1,8 +1,10 @@
 package com.movieticket.userservice.application.dto.request;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class CreateUserRequest {
 
     private String username;
@@ -13,5 +15,5 @@ public class CreateUserRequest {
 
     private String fullName;
 
-    private String phoneNumber;
+    private String phone;
 }
