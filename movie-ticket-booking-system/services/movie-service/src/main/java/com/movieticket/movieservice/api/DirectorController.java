@@ -1,17 +1,17 @@
 package com.movieticket.movieservice.api;
 
 import com.movieticket.movieservice.api.dto.request.CreateDirectorRequest;
+import com.movieticket.movieservice.api.dto.request.UpdateDirectorRequest;
 import com.movieticket.movieservice.api.dto.response.PersonResponse;
-import com.movieticket.movieservice.application.MovieApplicationService;
+import com.movieticket.movieservice.application.usecase.director.CreateDirectorUseCase;
+import com.movieticket.movieservice.application.usecase.director.GetAllDirectorsUseCase;
+import com.movieticket.movieservice.application.usecase.director.GetDirectorByIdUseCase;
+import com.movieticket.movieservice.application.usecase.director.UpdateDirectorUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,7 +20,10 @@ import java.util.List;
 @RequestMapping("/api/directors")
 public class DirectorController {
 
-    private final MovieApplicationService movieApplicationService;
+    private final CreateDirectorUseCase createDirectorUseCase;
+    private final GetAllDirectorsUseCase getAllDirectorsUseCase;
+    private final GetDirectorByIdUseCase getDirectorByIdUseCase;
+    private final UpdateDirectorUseCase updateDirectorUseCase;
 
     @PostMapping
     public ResponseEntity<PersonResponse> createDirector(
@@ -28,11 +31,26 @@ public class DirectorController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(movieApplicationService.createDirector(request));
+                .body(createDirectorUseCase.execute(request));
     }
 
     @GetMapping
     public ResponseEntity<List<PersonResponse>> getDirectors() {
-        return ResponseEntity.ok(movieApplicationService.getAllDirectors());
+        return ResponseEntity.ok(getAllDirectorsUseCase.execute());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PersonResponse> getDirectorById(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(getDirectorByIdUseCase.execute(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PersonResponse> updateDirector(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateDirectorRequest request
+    ) {
+        return ResponseEntity.ok(updateDirectorUseCase.execute(id, request));
     }
 }

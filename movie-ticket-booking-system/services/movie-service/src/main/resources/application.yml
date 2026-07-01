@@ -22,10 +22,14 @@ spring:
         format_sql: true
 
   cache:
-    type: simple
+    type: redis
+    redis:
+      time-to-live: 10m
 
   data:
     redis:
+      host: localhost
+      port: 6379
       repositories:
         enabled: false
 
@@ -52,7 +56,7 @@ eureka:
 management:
   health:
     redis:
-      enabled: false
+      enabled: true
   endpoints:
     web:
       exposure:

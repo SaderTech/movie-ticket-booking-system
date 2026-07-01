@@ -48,6 +48,14 @@ public class Actor {
         this.birthDate = birthDate;
     }
 
+    public void update(String name, String avatarUrl, String biography, LocalDate birthDate) {
+        validateName(name);
+        this.name = name;
+        this.avatarUrl = avatarUrl;
+        this.biography = biography;
+        this.birthDate = birthDate;
+    }
+
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Actor name must not be blank");
