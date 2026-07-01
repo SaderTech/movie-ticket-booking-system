@@ -1,18 +1,25 @@
-package userservice.domain.repository;
+package com.movieticket.userservice.domain.repository;
 
-import userservice.domain.aggregate.UserAggregate;
+import com.movieticket.userservice.domain.entity.User;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository {
 
-    UserAggregate save(UserAggregate aggregate);
+    User save(User user);
 
-    Optional<UserAggregate> findById(Long id);
+    Optional<User> findById(Long id);
 
-    Optional<UserAggregate> findByEmail(String email);
+    Optional<User> findByUsername(String username);
 
-    Optional<UserAggregate> findByUsername(String username);
+    Optional<User> findByEmail(String email);
 
-    void delete(Long id);
+    List<User> findAll();
+
+    boolean existsByUsername(String username);
+
+    boolean existsByEmail(String email);
+
+    void deleteById(Long id);
 }

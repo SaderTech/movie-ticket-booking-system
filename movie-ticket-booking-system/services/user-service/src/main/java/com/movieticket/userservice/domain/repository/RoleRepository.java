@@ -1,6 +1,6 @@
-package com.userservice.domain.repository;
+package com.movieticket.userservice.domain.repository;
 
-import com.userservice.domain.entity.Role;
+import com.movieticket.userservice.domain.entity.Role;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +11,7 @@ public interface RoleRepository {
 
     Optional<Role> findById(Long id);
 
-    Optional<Role> findByName(String name);
+    Optional<Role> findByRoleName(String roleName);
 
     List<Role> findAll();
 }
