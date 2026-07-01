@@ -3,15 +3,63 @@ server:
 
 spring:
   application:
-    name: movie-service
+    name: MOVIE-SERVICE
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/movie_db
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 10m
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      repositories:
+        enabled: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
 
 eureka:
   instance:
-    hostname: localhost
-    lease-expiration-duration-in-seconds: 10
-    lease-renewal-interval-in-seconds: 3
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
   client:
+    enabled: true
     register-with-eureka: true
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+management:
+  health:
+    redis:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

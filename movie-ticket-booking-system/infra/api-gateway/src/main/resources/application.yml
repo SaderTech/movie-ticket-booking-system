@@ -4,45 +4,84 @@ server:
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
       routes:
         - id: user-service-route
           uri: lb://USER-SERVICE
           predicates:
             - Path=/api/users/**
+          filters:
+            - StripPrefix=0
 
         - id: movie-service-route
           uri: lb://MOVIE-SERVICE
           predicates:
             - Path=/api/movies/**
+          filters:
+            - StripPrefix=0
 
         - id: cinema-service-route
           uri: lb://CINEMA-SERVICE
           predicates:
             - Path=/api/cinemas/**
+          filters:
+            - StripPrefix=0
 
         - id: showtime-service-route
           uri: lb://SHOWTIME-SERVICE
           predicates:
             - Path=/api/showtimes/**
+          filters:
+            - StripPrefix=0
 
         - id: booking-service-route
           uri: lb://BOOKING-SERVICE
           predicates:
             - Path=/api/bookings/**
+          filters:
+            - StripPrefix=0
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "http://localhost:3000"
+            allowed-methods:
+              - "GET"
+              - "POST"
+              - "PUT"
+              - "DELETE"
+              - "OPTIONS"
+            allowed-headers:
+              - "*"
+            allow-credentials: true
 
 eureka:
   instance:
+    prefer-ip-address: true
     hostname: localhost
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      access: unrestricted
+  metrics:
+    tags:
+      application: ${spring.application.name}
