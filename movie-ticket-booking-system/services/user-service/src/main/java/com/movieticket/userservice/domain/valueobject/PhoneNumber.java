@@ -1,10 +1,26 @@
-package com.userservice.domain.valueobject;
+package com.movieticket.userservice.domain.valueobject;
+
+import java.util.Objects;
 
 public record PhoneNumber(String value) {
 
     public PhoneNumber {
-        if (value == null || !value.matches("\\d{10,11}")) {
+
+        Objects.requireNonNull(value);
+
+        value = value.trim();
+
+        if (value.startsWith("+84")) {
+            value = "0" + value.substring(3);
+        }
+
+        if (!value.matches("^0\\d{9,10}$")) {
             throw new IllegalArgumentException("Invalid phone number");
         }
+    }
+
+    @Override
+    public String toString() {
+        return value;
     }
 }

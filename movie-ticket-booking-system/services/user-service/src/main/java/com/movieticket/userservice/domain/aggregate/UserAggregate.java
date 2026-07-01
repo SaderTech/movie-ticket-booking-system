@@ -1,9 +1,8 @@
-package userservice.domain.aggregate;
+package com.movieticket.userservice.domain.aggregate;
 
-import userservice.domain.entity.Role;
-import userservice.domain.entity.User;
-import userservice.domain.entity.UserProfile;
-
+import com.movieticket.userservice.domain.entity.RefreshToken;
+import com.movieticket.userservice.domain.entity.Role;
+import com.movieticket.userservice.domain.entity.User;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -15,45 +14,40 @@ public class UserAggregate {
 
     private final User user;
 
-    private UserProfile profile;
-
     private final List<Role> roles;
+
+    private final List<RefreshToken> refreshTokens;
 
     private UserAggregate(
             User user,
-            UserProfile profile,
-            List<Role> roles
+            List<Role> roles,
+            List<RefreshToken> refreshTokens
     ) {
         this.user = user;
-        this.profile = profile;
         this.roles = roles;
+        this.refreshTokens = refreshTokens;
     }
 
-    public static UserAggregate create(
-            User user,
-            UserProfile profile
-    ) {
+    public static UserAggregate create(User user) {
 
         Objects.requireNonNull(user);
 
         return new UserAggregate(
                 user,
-                profile,
+                new ArrayList<>(),
                 new ArrayList<>()
         );
     }
 
-    public void updateProfile(UserProfile profile) {
-        this.profile = profile;
-    }
+    // ================= ROLE =================
 
     public void assignRole(Role role) {
 
         Objects.requireNonNull(role);
 
         boolean exists = roles.stream()
-                .anyMatch(r -> r.getName()
-                        .equals(role.getName()));
+                .anyMatch(r ->
+                        r.getRoleName().equalsIgnoreCase(role.getRoleName()));
 
         if (!exists) {
             roles.add(role);
@@ -63,6 +57,31 @@ public class UserAggregate {
     public void removeRole(String roleName) {
 
         roles.removeIf(role ->
-                role.getName().equals(roleName));
+                role.getRoleName().equalsIgnoreCase(roleName));
+    }
+
+    public boolean hasRole(String roleName) {
+
+        return roles.stream()
+                .anyMatch(role ->
+                        role.getRoleName().equalsIgnoreCase(roleName));
+    }
+
+    public boolean isAdmin() {
+        return hasRole("ADMIN");
+    }
+
+    // ================= REFRESH TOKEN =================
+
+    public void addRefreshToken(RefreshToken token) {
+
+        Objects.requireNonNull(token);
+
+        refreshTokens.add(token);
+    }
+
+    public void revokeAllTokens() {
+
+        refreshTokens.forEach(RefreshToken::revoke);
     }
 }
