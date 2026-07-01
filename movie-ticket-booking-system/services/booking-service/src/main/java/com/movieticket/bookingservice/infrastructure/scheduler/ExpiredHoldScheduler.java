@@ -35,8 +35,7 @@ public class ExpiredHoldScheduler {
 
         log.info("Expiring {} stale seat holds", expiredHolds.size());
         for (SeatHold hold : expiredHolds) {
-            hold.setStatus(SeatHoldStatus.EXPIRED);
-            hold.setUpdatedAt(LocalDateTime.now());
+            hold.expire();
             seatHoldRepository.save(hold);
 
             List<String> seatCodes = hold.getSeats().stream()

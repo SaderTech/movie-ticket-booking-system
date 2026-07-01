@@ -11,4 +11,6 @@ public class ConfirmBookingCommand {
     private final Long userId;
     private final String holdToken;
     private final String paymentMethod;
+    private final String returnUrl;
+    private final String ipAddress;
 }

@@ -3,17 +3,15 @@ package com.movieticket.bookingservice.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 @Configuration
 public class RedissonConfig {
 
     @Bean
-    @ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true", matchIfMissing = false)
+    @DependsOn("embeddedRedisConfig")
     public RedissonClient redissonClient() {
         Config config = new Config();
         config.useSingleServer()

@@ -40,10 +40,24 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- H2 for testing -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Redisson Starter for Concurrency Lock -->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Embedded Redis for local dev (không cần Docker) -->
+        <dependency>
+            <groupId>com.github.codemonstur</groupId>
+            <artifactId>embedded-redis</artifactId>
+            <version>1.4.3</version>
         </dependency>
 
         <!-- Spring Kafka for Message Queue -->

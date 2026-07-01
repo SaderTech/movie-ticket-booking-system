@@ -16,4 +16,6 @@ public class ConfirmBookingRequest {
 
     @NotBlank(message = "paymentMethod is required")
     private String paymentMethod;
+
+    private String returnUrl;
 }

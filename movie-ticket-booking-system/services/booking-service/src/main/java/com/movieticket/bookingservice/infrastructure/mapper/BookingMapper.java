@@ -5,6 +5,8 @@ import com.movieticket.bookingservice.domain.entity.BookingSeat;
 import com.movieticket.bookingservice.infrastructure.jpa.BookingJpaEntity;
 import com.movieticket.bookingservice.infrastructure.jpa.BookingSeatJpaEntity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class BookingMapper {
@@ -13,7 +15,13 @@ public class BookingMapper {
         if (entity == null) {
             return null;
         }
-        Booking booking = Booking.builder()
+        List<BookingSeat> domainSeats = entity.getSeats() != null
+                ? entity.getSeats().stream()
+                        .map(BookingMapper::toDomainSeat)
+                        .collect(Collectors.toList())
+                : new ArrayList<>();
+
+        return Booking.builder()
                 .id(entity.getId())
                 .bookingCode(entity.getBookingCode())
                 .userId(entity.getUserId())
@@ -23,14 +31,8 @@ public class BookingMapper {
                 .holdToken(entity.getHoldToken())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .seats(domainSeats)
                 .build();
-
-        if (entity.getSeats() != null) {
-            booking.setSeats(entity.getSeats().stream()
-                    .map(BookingMapper::toDomainSeat)
-                    .collect(Collectors.toList()));
-        }
-        return booking;
     }
 
     public static BookingJpaEntity toEntity(Booking domain) {
