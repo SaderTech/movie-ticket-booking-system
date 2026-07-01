@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/user_db
     username: postgres
-    password: 123
+    password: admin
 
   jpa:
     hibernate:
@@ -20,7 +20,6 @@ spring:
 
 eureka:
   client:
-    enabled: false
     register-with-eureka: true
     fetch-registry: true
     service-url:
