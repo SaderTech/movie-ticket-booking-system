@@ -1,13 +1,14 @@
-package userservice.application.service;
+package com.movieticket.userservice.application.service;
 
+import com.movieticket.userservice.application.dto.request.CreateUserRequest;
+import com.movieticket.userservice.application.dto.request.LoginRequest;
+import com.movieticket.userservice.application.dto.request.UpdateUserRequest;
+import com.movieticket.userservice.application.dto.response.LoginResponse;
+import com.movieticket.userservice.application.dto.response.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import userservice.application.dto.request.CreateUserRequest;
-import userservice.application.dto.request.LoginRequest;
-import userservice.application.dto.request.UpdateUserRequest;
-import userservice.application.dto.response.LoginResponse;
-import userservice.application.dto.response.UserResponse;
+
 
 @Service
 @RequiredArgsConstructor

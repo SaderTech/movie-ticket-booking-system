@@ -1,7 +1,8 @@
-package userservice.domain.entity;
+package com.movieticket.userservice.domain.entity;
 
-import userservice.domain.valueobject.FullName;
-import userservice.domain.valueobject.PhoneNumber;
+
+import com.movieticket.userservice.domain.valueobject.FullName;
+import com.movieticket.userservice.domain.valueobject.PhoneNumber;
 
 public class UserProfile {
 

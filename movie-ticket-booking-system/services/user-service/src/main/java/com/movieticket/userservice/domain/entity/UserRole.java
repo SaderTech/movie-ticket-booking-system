@@ -1,4 +1,4 @@
-package userservice.domain.entity;
+package com.movieticket.userservice.domain.entity;
 
 public class UserRole {
 

@@ -1,4 +1,4 @@
-package userservice.application.dto.request;
+package com.movieticket.userservice.application.dto.request;
 
 import lombok.Data;
 

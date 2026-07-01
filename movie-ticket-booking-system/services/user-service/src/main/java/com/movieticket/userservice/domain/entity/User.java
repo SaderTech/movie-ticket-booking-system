@@ -1,7 +1,9 @@
-package userservice.domain.entity;
+package com.movieticket.userservice.domain.entity;
 
-import userservice.domain.valueobject.Email;
-import userservice.domain.valueobject.Password;
+
+
+import com.movieticket.userservice.domain.valueobject.Email;
+import com.movieticket.userservice.domain.valueobject.Password;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

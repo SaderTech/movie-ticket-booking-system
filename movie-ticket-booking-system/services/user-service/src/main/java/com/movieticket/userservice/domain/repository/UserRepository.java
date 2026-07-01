@@ -1,6 +1,8 @@
-package userservice.domain.repository;
+package com.movieticket.userservice.domain.repository;
 
-import userservice.domain.aggregate.UserAggregate;
+
+
+import com.movieticket.userservice.domain.aggregate.UserAggregate;
 
 import java.util.Optional;
 

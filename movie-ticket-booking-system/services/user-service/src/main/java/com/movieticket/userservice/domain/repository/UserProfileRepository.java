@@ -1,6 +1,8 @@
-package com.userservice.domain.repository;
+package com.movieticket.userservice.domain.repository;
 
-import com.userservice.domain.entity.UserProfile;
+
+
+import com.movieticket.userservice.domain.entity.UserProfile;
 
 import java.util.Optional;
 

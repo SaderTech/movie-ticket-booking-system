@@ -1,4 +1,4 @@
-package userservice.domain.valueobject;
+package com.movieticket.userservice.domain.valueobject;
 
 import java.util.Objects;
 

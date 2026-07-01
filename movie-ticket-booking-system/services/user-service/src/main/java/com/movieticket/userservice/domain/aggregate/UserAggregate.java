@@ -1,9 +1,10 @@
-package userservice.domain.aggregate;
+package com.movieticket.userservice.domain.aggregate;
 
-import userservice.domain.entity.Role;
-import userservice.domain.entity.User;
-import userservice.domain.entity.UserProfile;
 
+
+import com.movieticket.userservice.domain.entity.Role;
+import com.movieticket.userservice.domain.entity.User;
+import com.movieticket.userservice.domain.entity.UserProfile;
 import lombok.Getter;
 
 import java.util.ArrayList;

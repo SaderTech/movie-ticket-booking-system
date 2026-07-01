@@ -1,4 +1,4 @@
-package userservice.application.dto.response;
+package com.movieticket.userservice.application.dto.response;
 
 import lombok.Builder;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.userservice.domain.valueobject;
+package com.movieticket.userservice.domain.valueobject;
 
 public record FullName(String value) {
 
