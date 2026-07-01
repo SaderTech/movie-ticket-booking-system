@@ -1,8 +1,12 @@
 package com.movieticket.cinemaservice.api;
 
 import com.movieticket.cinemaservice.api.dto.request.CreateSeatTypeRequest;
+import com.movieticket.cinemaservice.api.dto.request.UpdateSeatTypeRequest;
 import com.movieticket.cinemaservice.api.dto.response.SeatTypeResponse;
-import com.movieticket.cinemaservice.application.CinemaApplicationService;
+import com.movieticket.cinemaservice.application.usecase.seattype.CreateSeatTypeUseCase;
+import com.movieticket.cinemaservice.application.usecase.seattype.GetAllSeatTypesUseCase;
+import com.movieticket.cinemaservice.application.usecase.seattype.GetSeatTypeByIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.seattype.UpdateSeatTypeUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +20,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SeatTypeController {
 
-    private final CinemaApplicationService cinemaApplicationService;
+    private final CreateSeatTypeUseCase createSeatTypeUseCase;
+    private final GetAllSeatTypesUseCase getAllSeatTypesUseCase;
+    private final GetSeatTypeByIdUseCase getSeatTypeByIdUseCase;
+    private final UpdateSeatTypeUseCase updateSeatTypeUseCase;
 
     @PostMapping
     public ResponseEntity<SeatTypeResponse> createSeatType(
@@ -24,11 +31,26 @@ public class SeatTypeController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(cinemaApplicationService.createSeatType(request));
+                .body(createSeatTypeUseCase.execute(request));
     }
 
     @GetMapping
     public ResponseEntity<List<SeatTypeResponse>> getSeatTypes() {
-        return ResponseEntity.ok(cinemaApplicationService.getAllSeatTypes());
+        return ResponseEntity.ok(getAllSeatTypesUseCase.execute());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SeatTypeResponse> getSeatTypeById(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(getSeatTypeByIdUseCase.execute(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SeatTypeResponse> updateSeatType(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateSeatTypeRequest request
+    ) {
+        return ResponseEntity.ok(updateSeatTypeUseCase.execute(id, request));
     }
 }

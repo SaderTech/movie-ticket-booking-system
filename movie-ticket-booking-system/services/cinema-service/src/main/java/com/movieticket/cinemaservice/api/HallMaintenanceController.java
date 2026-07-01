@@ -3,7 +3,10 @@ package com.movieticket.cinemaservice.api;
 import com.movieticket.cinemaservice.api.dto.request.CreateHallMaintenanceRequest;
 import com.movieticket.cinemaservice.api.dto.request.UpdateMaintenanceStatusRequest;
 import com.movieticket.cinemaservice.api.dto.response.HallMaintenanceResponse;
-import com.movieticket.cinemaservice.application.CinemaApplicationService;
+import com.movieticket.cinemaservice.application.usecase.maintenance.CreateMaintenanceUseCase;
+import com.movieticket.cinemaservice.application.usecase.maintenance.GetMaintenanceByIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.maintenance.GetMaintenancesByHallIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.maintenance.UpdateMaintenanceStatusUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +20,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HallMaintenanceController {
 
-    private final CinemaApplicationService cinemaApplicationService;
+    private final CreateMaintenanceUseCase createMaintenanceUseCase;
+    private final GetMaintenanceByIdUseCase getMaintenanceByIdUseCase;
+    private final GetMaintenancesByHallIdUseCase getMaintenancesByHallIdUseCase;
+    private final UpdateMaintenanceStatusUseCase updateMaintenanceStatusUseCase;
 
     @PostMapping
     public ResponseEntity<HallMaintenanceResponse> createMaintenance(
@@ -25,21 +31,28 @@ public class HallMaintenanceController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(cinemaApplicationService.createMaintenance(request));
+                .body(createMaintenanceUseCase.execute(request));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<HallMaintenanceResponse> getMaintenanceById(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(getMaintenanceByIdUseCase.execute(id));
     }
 
     @GetMapping
     public ResponseEntity<List<HallMaintenanceResponse>> getMaintenancesByHallId(
-            @RequestParam Long hallId
+            @RequestParam(name = "hallId") Long hallId
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.getMaintenancesByHallId(hallId));
+        return ResponseEntity.ok(getMaintenancesByHallIdUseCase.execute(hallId));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<HallMaintenanceResponse> updateMaintenanceStatus(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateMaintenanceStatusRequest request
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.updateMaintenanceStatus(id, request));
+        return ResponseEntity.ok(updateMaintenanceStatusUseCase.execute(id, request));
     }
 }

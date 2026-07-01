@@ -3,7 +3,10 @@ package com.movieticket.cinemaservice.api;
 import com.movieticket.cinemaservice.api.dto.request.CreateSeatRequest;
 import com.movieticket.cinemaservice.api.dto.request.UpdateSeatRequest;
 import com.movieticket.cinemaservice.api.dto.response.SeatResponse;
-import com.movieticket.cinemaservice.application.CinemaApplicationService;
+import com.movieticket.cinemaservice.application.usecase.seat.CreateSeatUseCase;
+import com.movieticket.cinemaservice.application.usecase.seat.GetSeatByIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.seat.GetSeatsByHallIdUseCase;
+import com.movieticket.cinemaservice.application.usecase.seat.UpdateSeatUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +20,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SeatController {
 
-    private final CinemaApplicationService cinemaApplicationService;
+    private final CreateSeatUseCase createSeatUseCase;
+    private final GetSeatByIdUseCase getSeatByIdUseCase;
+    private final GetSeatsByHallIdUseCase getSeatsByHallIdUseCase;
+    private final UpdateSeatUseCase updateSeatUseCase;
 
     @PostMapping
     public ResponseEntity<SeatResponse> createSeat(
@@ -25,21 +31,28 @@ public class SeatController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(cinemaApplicationService.createSeat(request));
+                .body(createSeatUseCase.execute(request));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SeatResponse> getSeatById(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(getSeatByIdUseCase.execute(id));
     }
 
     @GetMapping
     public ResponseEntity<List<SeatResponse>> getSeatsByHallId(
-            @RequestParam Long hallId
+            @RequestParam(name = "hallId") Long hallId
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.getSeatsByHallId(hallId));
+        return ResponseEntity.ok(getSeatsByHallIdUseCase.execute(hallId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<SeatResponse> updateSeat(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateSeatRequest request
     ) {
-        return ResponseEntity.ok(cinemaApplicationService.updateSeat(id, request));
+        return ResponseEntity.ok(updateSeatUseCase.execute(id, request));
     }
 }
