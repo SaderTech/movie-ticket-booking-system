@@ -26,6 +26,7 @@ public class BookingResponse {
     private List<BookingSeatDto> seats;
     private List<TicketResponse> tickets;
     private PaymentDto payment;
+    private String paymentUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

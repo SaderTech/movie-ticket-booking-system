@@ -5,8 +5,7 @@ import com.movieticket.bookingservice.domain.enums.TicketStatus;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
-import org.springframework.stereotype.Repository;
+
 
 public interface TicketRepository {
     Ticket save(Ticket ticket);

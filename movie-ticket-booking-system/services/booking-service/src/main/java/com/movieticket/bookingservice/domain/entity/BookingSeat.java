@@ -4,15 +4,11 @@ import com.movieticket.bookingservice.domain.enums.BookingSeatStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class BookingSeat {
@@ -24,4 +20,22 @@ public class BookingSeat {
     private BigDecimal price;
     private BookingSeatStatus status;
     private LocalDateTime createdAt;
+
+    public void assignToBooking(Long bookingId) {
+        this.bookingId = bookingId;
+    }
+
+    public void confirm() {
+        if (status != BookingSeatStatus.PENDING) {
+            throw new IllegalStateException("Only pending seat can be confirmed, current: " + status);
+        }
+        status = BookingSeatStatus.CONFIRMED;
+    }
+
+    public void cancel() {
+        if (status == BookingSeatStatus.CANCELLED) {
+            return;
+        }
+        status = BookingSeatStatus.CANCELLED;
+    }
 }
