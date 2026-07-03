@@ -22,7 +22,6 @@ import javax.crypto.SecretKey;
 @Slf4j
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-    // Lấy secret key từ file application.yml
     @Value("${app.jwt.secret}")
     private String secret;
 
@@ -39,7 +38,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String token = authHeader.substring(7);
 
         try {
-            // 1. DÙNG SECRET KEY ĐỂ GIẢI MÃ VÀ XÁC THỰC CHỮ KÝ THẬT
             SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
             Claims claims = Jwts.parser()
                     .verifyWith(key)
@@ -47,14 +45,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     .parseSignedClaims(token)
                     .getPayload();
 
-            // 2. BÓC TÁCH DỮ LIỆU ĐỘNG TỪ BÊN TRONG TOKEN
             String userId = claims.get("userId") != null ? claims.get("userId").toString() : "";
-            // Giả sử email được lưu trong Subject của JWT
             String userEmail = claims.getSubject() != null ? claims.getSubject() : "";
 
             log.info("===> [Gateway Auth] Xác thực thành công UserID: {} | Email: {}", userId, userEmail);
 
-            // 3. ĐÍNH KÈM THÔNG TIN THẬT VÀO HEADER ĐỂ CHUYỂN XUỐNG DƯỚI
+            // ĐÍNH KÈM THÔNG TIN THẬT VÀO HEADER ĐỂ CHUYỂN XUỐNG DƯỚI
             ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                     .header(GatewayConstants.HEADER_USER_ID, userId)
                     .header(GatewayConstants.HEADER_USER_NAME, userEmail)

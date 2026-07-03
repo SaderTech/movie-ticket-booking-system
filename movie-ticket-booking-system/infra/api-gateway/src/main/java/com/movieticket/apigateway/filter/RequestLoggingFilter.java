@@ -21,10 +21,7 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
         // Lấy thông tin Request đầu vào (Pre-filter)
         ServerHttpRequest serverHttpRequest = exchange.getRequest();
 
-        // Trích xuất mã định danh Correlation ID từ Header
         String correlationId = serverHttpRequest.getHeaders().getFirst(GatewayConstants.HEADER_CORRELATION_ID);
-
-        // In thông tin mã định danh ra log hệ thống để theo dõi (Tracking)
         log.info("Request header [{}]: Path called -> {}", correlationId, serverHttpRequest.getPath());
 
         // Tiếp tục chuyển tiếp request sang các filter tiếp theo (Post-filter)

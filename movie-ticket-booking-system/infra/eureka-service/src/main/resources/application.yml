@@ -14,6 +14,11 @@ eureka:
   server:
     enableSelfPreservation: false
     evictionIntervalTimerInMs: 10000
+  healthcheck:
+    interval: 10s
+    timeout: 5s
+    retries: 10
+    start_period: 45s
 
 management:
   endpoints:

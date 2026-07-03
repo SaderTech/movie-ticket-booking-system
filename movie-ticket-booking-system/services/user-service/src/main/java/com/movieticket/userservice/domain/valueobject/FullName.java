@@ -1,5 +1,4 @@
 package com.movieticket.userservice.domain.valueobject;
-
 import java.util.Objects;
 
 public record FullName(String value) {
