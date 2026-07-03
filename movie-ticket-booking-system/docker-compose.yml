@@ -1,23 +1,33 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  # 1. Cơ sở dữ liệu PostgreSQL dùng chung cho các Service
+  # ========================================
+  # PHẦN 1: HẠ TẦNG CƠ SỞ (INFRASTRUCTURE)
+  # ========================================
+
+  # 1. Cơ sở dữ liệu PostgreSQL
   postgres-db:
     image: postgres:15-alpine
     container_name: movie_postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root  # Cả nhóm thống nhất dùng pass này lúc Dev
-      # Cấu hình tự động tạo nhiều database khi chạy lần đầu
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
       POSTGRES_MULTIPLE_DATABASES: user_db,movie_db,cinema_db,showtime_db,booking_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/init-scripts:/docker-entrypoint-initdb.d # Thư mục chứa script tạo DB
+      - ./infra/init-scripts:/docker-entrypoint-initdb.d
     restart: always
+    networks:
+      - movie_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # 2. pgAdmin (Giao diện web để xem và quản lý Database trực quan)
+  # 2. pgAdmin
   pgadmin:
     image: dpage/pgadmin4
     container_name: movie_pgadmin
@@ -29,16 +39,20 @@ services:
     depends_on:
       - postgres-db
     restart: always
+    networks:
+      - movie_network
 
-  # 3. Redis (Dùng để Booking Service khóa ghế tạm thời chống trùng)
+  # 3. Redis
   redis-cache:
     image: redis:7-alpine
     container_name: movie_redis
     ports:
       - "6379:6379"
     restart: always
+    networks:
+      - movie_network
 
-  # 4. Zookeeper (Điều phối cho Kafka)
+  # 4. Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: movie_zookeeper
@@ -47,8 +61,10 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      - movie_network
 
-  # 5. Kafka Broker (Dùng để các Service bắn Event cho nhau, ví dụ: Đặt vé xong -> Bắn mail)
+  # 5. Kafka Broker
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: movie_kafka
@@ -56,11 +72,211 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - movie_network
 
+  # ========================================
+  # PHẦN 2: CÁC MICROSERVICES CỦA DỰ ÁN
+  # ========================================
+
+  # 6. Eureka Server
+  eureka-service:
+    build:
+      context: .
+      dockerfile: infra/eureka-service/Dockerfile
+    container_name: movie_eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+    restart: always
+    networks:
+      - movie_network
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8761/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  # 7. API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: infra/api-gateway/Dockerfile
+    container_name: movie_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+    restart: always
+    networks:
+      - movie_network
+
+  # 8. User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    container_name: movie_user
+    ports:
+      - "8081:8081"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/user_db
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    restart: always
+    networks:
+      - movie_network
+
+  # 9. Movie Service (Đã bổ sung Redis)
+  movie-service:
+    build:
+      context: .
+      dockerfile: services/movie-service/Dockerfile
+    container_name: movie_service
+    ports:
+      - "8082:8082"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/movie_db
+      - SPRING_DATA_REDIS_HOST=redis-cache
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+    restart: always
+    networks:
+      - movie_network
+
+  # 10. Cinema Service (Đã bổ sung Redis)
+  cinema-service:
+    build:
+      context: .
+      dockerfile: services/cinema-service/Dockerfile
+    container_name: movie_cinema
+    ports:
+      - "8083:8083"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/cinema_db
+      - SPRING_DATA_REDIS_HOST=redis-cache
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+    restart: always
+    networks:
+      - movie_network
+
+  # 11. Showtime Service
+  showtime-service:
+    build:
+      context: .
+      dockerfile: services/showtime-service/Dockerfile
+    container_name: movie_showtime
+    ports:
+      - "8084:8084"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/showtime_db
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    restart: always
+    networks:
+      - movie_network
+
+  # 12. Booking Service (Sửa lại chuẩn key Redis)
+  booking-service:
+    build:
+      context: .
+      dockerfile: services/booking-service/Dockerfile
+    container_name: movie_booking
+    ports:
+      - "8085:8085"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/booking_db
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_DATA_REDIS_HOST=redis-cache
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis-cache:
+        condition: service_started
+    restart: always
+    networks:
+      - movie_network
+
+  # 13. Notification Service
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: movie_notification
+    ports:
+      - "8086:8086"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: always
+    networks:
+      - movie_network
+
+# Định nghĩa mạng nội bộ
+networks:
+  movie_network:
+    driver: bridge
+
+# Khai báo volume
 volumes:
   postgres_data:

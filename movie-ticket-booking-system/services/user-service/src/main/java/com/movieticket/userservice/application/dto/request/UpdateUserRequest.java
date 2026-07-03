@@ -1,13 +1,15 @@
-package userservice.application.dto.request;
+package com.movieticket.userservice.application.dto.request;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class UpdateUserRequest {
 
     private String fullName;
 
-    private String phoneNumber;
+    private String phone;
 
-    private String avatarUrl;
+    private String avatar;
 }

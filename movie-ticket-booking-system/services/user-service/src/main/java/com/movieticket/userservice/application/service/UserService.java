@@ -1,31 +1,17 @@
-package userservice.application.service;
+package com.movieticket.userservice.application.service;
 
-import userservice.application.dto.request.CreateUserRequest;
-import userservice.application.dto.request.LoginRequest;
-import userservice.application.dto.request.UpdateUserRequest;
-import userservice.application.dto.response.LoginResponse;
-import userservice.application.dto.response.UserResponse;
+import com.movieticket.userservice.application.dto.request.UpdateUserRequest;
+import com.movieticket.userservice.application.dto.response.UserResponse;
+
+import java.util.List;
 
 public interface UserService {
 
-    UserResponse createUser(
-            CreateUserRequest request
-    );
+    UserResponse getUserById(Long userId);
 
-    LoginResponse login(
-            LoginRequest request
-    );
+    List<UserResponse> getAllUsers();
 
-    UserResponse getUserById(
-            Long userId
-    );
+    UserResponse updateUser(Long userId, UpdateUserRequest request);
 
-    UserResponse updateUser(
-            Long userId,
-            UpdateUserRequest request
-    );
-
-    void deleteUser(
-            Long userId
-    );
+    void deleteUser(Long userId);
 }

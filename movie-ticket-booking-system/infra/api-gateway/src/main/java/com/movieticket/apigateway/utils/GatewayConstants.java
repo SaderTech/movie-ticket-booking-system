@@ -4,7 +4,7 @@ public class GatewayConstants {
 
     public static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
-    // Danh sách các HTTP Headers tiêu chuẩn dùng để truyền thông tin qua lại giữa các Microservices
+    // Danh sách các HTTP Headers
     public static final String HEADER_CORRELATION_ID = "X-Correlation-ID";
     public static final String HEADER_USER_ID = "X-User-ID";
     public static final String HEADER_USER_NAME = "X-User-Email";

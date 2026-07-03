@@ -1,5 +1,6 @@
 server:
   port: 8081
+
 spring:
   application:
     name: USER-SERVICE
@@ -7,13 +8,14 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/user_db
     username: postgres
-    password: your_password
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
 
 eureka:
   client:
