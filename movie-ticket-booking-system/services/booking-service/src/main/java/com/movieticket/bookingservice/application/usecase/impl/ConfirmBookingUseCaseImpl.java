@@ -12,13 +12,18 @@ import com.movieticket.bookingservice.domain.enums.*;
 import com.movieticket.bookingservice.domain.port.*;
 import com.movieticket.bookingservice.domain.vo.BookingCode;
 import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
+import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
+import com.movieticket.bookingservice.infrastructure.client.MovieClient;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +41,8 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
     private final BookingEventOutboxRepository outboxRepository;
     private final SagaTransactionRepository sagaTransactionRepository;
     private final PaymentAdapter paymentAdapter;
+    private final MovieClient movieClient;
+    private final CinemaClient cinemaClient;
 
     @Override
     @Transactional
@@ -51,14 +58,15 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
 
         BookingCode bookingCode = BookingCode.generate();
         BigDecimal totalAmount = seatHold.getSeats().stream()
-                .map(shSeat -> BigDecimal.ZERO)
+                .map(shSeat -> new BigDecimal("90000")) // tạm
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<BookingSeat> bookingSeats = seatHold.getSeats().stream()
                 .map(shSeat -> BookingSeat.builder()
                         .showtimeId(seatHold.getShowtimeId())
                         .seatCode(shSeat.getSeatCode())
-                        .price(BigDecimal.ZERO)
+                        .seatType("NORMAL")
+                        .price(new BigDecimal("90000"))
                         .status(BookingSeatStatus.PENDING)
                         .createdAt(LocalDateTime.now())
                         .build())
@@ -113,17 +121,61 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
         payment = paymentRepository.save(payment);
 
         if (payment.getStatus() == PaymentStatus.PAID) {
+            // Lấy thông tin showtime (tạm bỏ qua, dùng giá trị mặc định)
+            Long movieId = null;
+            Long cinemaId = null;
+            Long hallId = null;
+            String hallName = null;
+            LocalDate showDate = LocalDate.now();
+            LocalTime startTime = LocalTime.of(0, 0);
+            LocalTime endTime = LocalTime.of(0, 0);
+
+            // Gọi MovieService lấy thông tin phim
+            final String[] movieTitle = {null};
+            final String[] moviePosterUrl = {null};
+            try {
+                Map<String, Object> movieData = movieClient.getMovie(movieId); // cần movieId từ showtime
+                movieTitle[0] = (String) movieData.get("title");
+                moviePosterUrl[0] = (String) movieData.get("posterUrl");
+            } catch (Exception e) {
+                log.warn("Could not fetch movie details: {}", e.getMessage());
+            }
+
+            // Gọi CinemaService lấy thông tin rạp
+            final String[] cinemaName = {null};
+            try {
+                Map<String, Object> cinemaData = cinemaClient.getCinema(cinemaId);
+                cinemaName[0] = (String) cinemaData.get("name");
+            } catch (Exception e) {
+                log.warn("Could not fetch cinema details: {}", e.getMessage());
+            }
+
             List<Ticket> tickets = bookingSeats.stream()
-                    .map(bs -> Ticket.builder()
-                            .ticketCode("TCK" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase())
-                            .bookingId(bookingId)
-                            .userId(command.getUserId())
-                            .showtimeId(seatHold.getShowtimeId())
-                            .seatCode(bs.getSeatCode())
-                            .price(bs.getPrice())
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
-                            .build())
+                    .map(bs -> {
+                        String ticketCode = "TCK" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+                        return Ticket.builder()
+                                .ticketCode(ticketCode)
+                                .bookingId(bookingId)
+                                .userId(command.getUserId())
+                                .showtimeId(seatHold.getShowtimeId())
+                                .movieId(movieId)
+                                .movieTitle(movieTitle[0])
+                                .moviePosterUrl(moviePosterUrl[0])
+                                .cinemaId(cinemaId)
+                                .cinemaName(cinemaName[0])
+                                .hallId(hallId)
+                                .hallName(hallName)
+                                .seatCode(bs.getSeatCode())
+                                .seatType(bs.getSeatType())
+                                .showDate(showDate)
+                                .startTime(startTime)
+                                .endTime(endTime)
+                                .price(bs.getPrice())
+                                .qrPayload("QR:" + ticketCode + ":" + bs.getSeatCode())
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .build();
+                    })
                     .collect(Collectors.toList());
 
             BookingAggregate aggregate = BookingAggregate.forNewConfirm(seatHold, booking, payment, saga);
@@ -203,16 +255,24 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
             booking.confirm();
 
             List<Ticket> tickets = booking.getSeats().stream()
-                    .map(bs -> Ticket.builder()
-                            .ticketCode("TCK" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase())
-                            .bookingId(bkId)
-                            .userId(bkUserId)
-                            .showtimeId(bkShowtimeId)
-                            .seatCode(bs.getSeatCode())
-                            .price(bs.getPrice())
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
-                            .build())
+                    .map(bs -> {
+                        String ticketCode = "TCK" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+                        return Ticket.builder()
+                                .ticketCode(ticketCode)
+                                .bookingId(bkId)
+                                .userId(bkUserId)
+                                .showtimeId(bkShowtimeId)
+                                .seatCode(bs.getSeatCode())
+                                .seatType(bs.getSeatType())
+                                .price(bs.getPrice())
+                                .showDate(LocalDate.now())
+                                .startTime(LocalTime.of(19, 0))
+                                .endTime(LocalTime.of(21, 30))
+                                .qrPayload("QR:" + ticketCode + ":" + bs.getSeatCode())
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .build();
+                    })
                     .collect(Collectors.toList());
             tickets.forEach(Ticket::issue);
 
