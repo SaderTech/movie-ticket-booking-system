@@ -103,7 +103,8 @@ services:
       test: [ "CMD", "wget", "-qO-", "http://localhost:8761/actuator/health" ]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 10
+      start_period: 45s
 
   # 7. API Gateway
   api-gateway:
