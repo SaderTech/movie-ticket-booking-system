@@ -38,9 +38,9 @@ public class ExpiredHoldScheduler {
             hold.expire();
             seatHoldRepository.save(hold);
 
-            List<String> seatCodes = hold.getSeats().stream()
-                    .map(s -> s.getSeatCode())
-                    .collect(Collectors.toList());
+            String seatCodesJson = hold.getSeats().stream()
+                    .map(s -> "\"" + s.getSeatCode() + "\"")
+                    .collect(Collectors.joining(",", "[", "]"));
 
             BookingEventOutbox outbox = BookingEventOutbox.builder()
                     .eventId(UUID.randomUUID().toString())
@@ -51,7 +51,7 @@ public class ExpiredHoldScheduler {
                     .payloadJson("{\"holdToken\":\"" + hold.getHoldToken()
                             + "\",\"userId\":" + hold.getUserId()
                             + ",\"showtimeId\":" + hold.getShowtimeId()
-                            + ",\"seatCodes\":" + seatCodes + "}")
+                            + ",\"seatCodes\":" + seatCodesJson + "}")
                     .status(OutboxStatus.PENDING)
                     .retryCount(0)
                     .build();

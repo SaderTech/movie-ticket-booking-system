@@ -1,4 +1,4 @@
-package com.movieticket.notificationservice.utils;
+package com.movieticket.notificationservice.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
@@ -16,13 +16,13 @@ public class UserUtils {
         return userId.toString();
     }
 
-    public String getCurrentUserRole(HttpServletRequest request) {
-        Object userRole = request.getAttribute("userRole");
+    public String getCurrentUserEmail(HttpServletRequest request) {
+        Object userEmail = request.getAttribute("userEmail");
 
-        if (userRole == null) {
+        if (userEmail == null) {
             return "UNKNOWN";
         }
 
-        return userRole.toString();
+        return userEmail.toString();
     }
 }

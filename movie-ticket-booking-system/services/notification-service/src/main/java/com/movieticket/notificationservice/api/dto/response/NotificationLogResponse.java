@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.api.dto.response;
 
-import com.movieticket.notificationservice.domain.model.NotificationLog;
+import com.movieticket.notificationservice.domain.entity.NotificationLog;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,7 +14,14 @@ public record NotificationLogResponse(
         String type,
         String status,
         String errorMessage,
-        LocalDateTime createdAt
+        String sourceEventId,
+        String sourceTopic,
+        int retryCount,
+        int maxRetries,
+        LocalDateTime nextRetryAt,
+        LocalDateTime scheduledAt,
+        LocalDateTime createdAt,
+        LocalDateTime sentAt
 ) {
     public static NotificationLogResponse from(NotificationLog log) {
         return new NotificationLogResponse(
@@ -26,7 +33,14 @@ public record NotificationLogResponse(
                 log.getType().name(),
                 log.getStatus().name(),
                 log.getErrorMessage(),
-                log.getCreatedAt()
+                log.getSourceEventId(),
+                log.getSourceTopic(),
+                log.getRetryCount(),
+                log.getMaxRetries(),
+                log.getNextRetryAt(),
+                log.getScheduledAt(),
+                log.getCreatedAt(),
+                log.getSentAt()
         );
     }
 }
