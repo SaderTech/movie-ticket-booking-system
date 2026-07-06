@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.application.usecase;
 
-import com.movieticket.notificationservice.domain.model.NotificationLog;
+import com.movieticket.notificationservice.domain.entity.NotificationLog;
 import com.movieticket.notificationservice.domain.repository.NotificationLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
