@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.domain.repository;
 
-import com.movieticket.notificationservice.domain.entity.Template;
+import com.movieticket.notificationservice.domain.model.Template;
 
 import java.util.List;
 import java.util.Optional;

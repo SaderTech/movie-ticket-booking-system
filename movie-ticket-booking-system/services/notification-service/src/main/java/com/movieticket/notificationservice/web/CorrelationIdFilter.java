@@ -1,4 +1,4 @@
-package com.movieticket.notificationservice.config;
+package com.movieticket.notificationservice.web;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

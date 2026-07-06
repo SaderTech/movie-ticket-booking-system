@@ -4,10 +4,9 @@ import com.movieticket.notificationservice.api.dto.response.NotificationLogRespo
 import com.movieticket.notificationservice.api.dto.response.NotificationResponse;
 import com.movieticket.notificationservice.api.dto.request.SendNotificationRequest;
 import com.movieticket.notificationservice.application.command.SendNotificationCommand;
-import com.movieticket.notificationservice.application.mapper.NotificationMapper;
 import com.movieticket.notificationservice.application.usecase.ListNotificationLogsUseCase;
 import com.movieticket.notificationservice.application.usecase.SendNotificationUseCase;
-import com.movieticket.notificationservice.domain.entity.NotificationLog;
+import com.movieticket.notificationservice.domain.model.NotificationLog;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +20,6 @@ public class NotificationController {
 
     private final SendNotificationUseCase sendNotificationUseCase;
     private final ListNotificationLogsUseCase listNotificationLogsUseCase;
-    private final NotificationMapper notificationMapper;
 
     @PostMapping(ApiPath.SEND)
     public NotificationResponse send(@Valid @RequestBody SendNotificationRequest request) {
@@ -35,14 +33,14 @@ public class NotificationController {
                 )
         );
 
-        return notificationMapper.toResponse(log);
+        return NotificationResponse.from(log);
     }
 
     @GetMapping(ApiPath.LOGS)
     public List<NotificationLogResponse> logs() {
         return listNotificationLogsUseCase.execute()
                 .stream()
-                .map(notificationMapper::toLogResponse)
+                .map(NotificationLogResponse::from)
                 .toList();
     }
 }

@@ -1,4 +1,4 @@
-package com.movieticket.notificationservice.domain.entity;
+package com.movieticket.notificationservice.domain.model;
 
 import lombok.AccessLevel;
 import lombok.Getter;

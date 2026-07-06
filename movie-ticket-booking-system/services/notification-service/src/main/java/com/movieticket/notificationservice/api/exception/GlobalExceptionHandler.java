@@ -1,7 +1,7 @@
 package com.movieticket.notificationservice.api.exception;
 
-import com.movieticket.notificationservice.api.exception.NotificationException;
-import com.movieticket.notificationservice.api.exception.TemplateNotFoundException;
+import com.movieticket.notificationservice.domain.exception.NotificationException;
+import com.movieticket.notificationservice.domain.exception.TemplateNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

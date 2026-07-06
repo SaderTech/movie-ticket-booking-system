@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.domain.repository;
 
-import com.movieticket.notificationservice.domain.entity.NotificationLog;
+import com.movieticket.notificationservice.domain.model.NotificationLog;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,11 +12,5 @@ public interface NotificationLogRepository {
 
     Optional<NotificationLog> findById(UUID id);
 
-    Optional<NotificationLog> findBySourceEventIdAndSourceTopic(String sourceEventId, String sourceTopic);
-
     List<NotificationLog> findAll();
-
-    List<NotificationLog> findDueRetries();
-
-    List<NotificationLog> findDueScheduledNotifications();
 }

@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.infrastructure.persistence;
 
-import com.movieticket.notificationservice.domain.entity.Template;
+import com.movieticket.notificationservice.domain.model.Template;
 import com.movieticket.notificationservice.domain.repository.TemplateRepository;
 import org.springframework.stereotype.Component;
 

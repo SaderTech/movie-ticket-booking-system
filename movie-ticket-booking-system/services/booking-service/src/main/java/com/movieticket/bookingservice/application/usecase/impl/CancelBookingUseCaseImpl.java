@@ -62,9 +62,7 @@ public class CancelBookingUseCaseImpl implements CancelBookingUseCase {
                 .eventType("BOOKING_CANCELLED")
                 .topic("booking.cancelled")
                 .payloadJson("{\"bookingCode\":\"" + command.getBookingCode()
-                        + "\",\"userId\":" + booking.getUserId()
-                        + ",\"showtimeId\":" + booking.getShowtimeId()
-                        + ",\"reason\":\"" + (command.getReason() != null ? command.getReason() : "") + "\"}")
+                        + "\",\"reason\":\"" + (command.getReason() != null ? command.getReason() : "") + "\"}")
                 .status(OutboxStatus.PENDING)
                 .retryCount(0)
                 .build();

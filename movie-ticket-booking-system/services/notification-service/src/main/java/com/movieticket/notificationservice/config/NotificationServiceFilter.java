@@ -12,8 +12,8 @@ import java.io.IOException;
 @Component
 public class NotificationServiceFilter extends OncePerRequestFilter {
 
-    public static final String HEADER_USER_ID = "X-User-ID";
-    public static final String HEADER_USER_EMAIL = "X-User-Email";
+    public static final String HEADER_USER_ID = "X-User-Id";
+    public static final String HEADER_USER_ROLE = "X-User-Role";
 
     @Override
     protected void doFilterInternal(
@@ -23,10 +23,10 @@ public class NotificationServiceFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String userId = request.getHeader(HEADER_USER_ID);
-        String userEmail = request.getHeader(HEADER_USER_EMAIL);
+        String userRole = request.getHeader(HEADER_USER_ROLE);
 
         request.setAttribute("userId", userId);
-        request.setAttribute("userEmail", userEmail);
+        request.setAttribute("userRole", userRole);
 
         filterChain.doFilter(request, response);
     }

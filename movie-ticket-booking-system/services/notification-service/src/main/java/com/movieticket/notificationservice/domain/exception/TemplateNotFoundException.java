@@ -1,4 +1,4 @@
-package com.movieticket.notificationservice.api.exception;
+package com.movieticket.notificationservice.domain.exception;
 
 import java.util.UUID;
 
