@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.api.dto.response;
 
-import com.movieticket.notificationservice.domain.model.Template;
+import com.movieticket.notificationservice.domain.entity.Template;
 
 import java.util.UUID;
 
