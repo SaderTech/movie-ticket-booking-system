@@ -9,12 +9,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/showtime_db
     username: postgres
     password: ${DB_PASSWORD:admin}
-    jpa:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
       hibernate:
-        ddl-auto: update
-      properties:
-        hibernate:
-          dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 eureka:
   instance:
