@@ -16,7 +16,7 @@ public class GetAllMoviesUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'all'")
+    @Cacheable(value = "movies", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute() {
         return movieRepository.findAll()

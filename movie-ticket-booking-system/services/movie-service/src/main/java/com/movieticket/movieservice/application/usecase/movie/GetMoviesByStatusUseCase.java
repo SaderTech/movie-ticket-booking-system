@@ -17,7 +17,7 @@ public class GetMoviesByStatusUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'status:' + #p0.name()")
+    @Cacheable(value = "movies", key = "'status:' + #p0.name()", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute(MovieStatus status) {
         return movieRepository.findByStatus(status)

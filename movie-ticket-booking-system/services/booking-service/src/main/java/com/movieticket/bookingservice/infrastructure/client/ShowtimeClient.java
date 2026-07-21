@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Map;
 
-@FeignClient(name = "showtime-service", path = "/api/v1/showtimes")
+@FeignClient(name = "SHOWTIME-SERVICE", path = "/api/showtimes")
 public interface ShowtimeClient {
 
     @GetMapping("/{id}")

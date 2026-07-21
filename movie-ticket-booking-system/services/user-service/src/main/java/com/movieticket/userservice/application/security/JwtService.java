@@ -3,12 +3,14 @@ package com.movieticket.userservice.application.security;
 
 import com.movieticket.userservice.config.JwtConfig;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
+import javax.crypto.SecretKey;
 
 
 @Service
@@ -26,7 +28,8 @@ public class JwtService {
 
     public String generateToken(
             Long userId,
-            String email
+            String email,
+            List<String> roles
     ){
 
         return Jwts.builder()
@@ -37,6 +40,8 @@ public class JwtService {
                         "userId",
                         userId
                 )
+
+                .claim("roles", roles)
 
                 .setIssuedAt(
                         new Date()
@@ -51,11 +56,7 @@ public class JwtService {
                 )
 
                 .signWith(
-                        Keys.hmacShaKeyFor(
-                                jwtConfig.getSecret()
-                                        .getBytes(StandardCharsets.UTF_8)
-                        ),
-                        SignatureAlgorithm.HS256
+                        signingKey()
                 )
 
                 .compact();
@@ -139,19 +140,16 @@ public class JwtService {
             String token
     ){
 
-        return Jwts.parserBuilder()
-
-                .setSigningKey(
-                        jwtConfig.getSecret()
-                                .getBytes(StandardCharsets.UTF_8)
-                )
-
+        return Jwts.parser()
+                .verifyWith(signingKey())
                 .build()
+                .parseSignedClaims(token)
+                .getPayload();
 
-                .parseClaimsJws(token)
+    }
 
-                .getBody();
-
+    private SecretKey signingKey() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtConfig.getSecret()));
     }
 
 

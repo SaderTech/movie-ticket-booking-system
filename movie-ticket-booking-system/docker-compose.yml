@@ -82,6 +82,15 @@ services:
     networks:
       - movie_network
 
+  # 6. Zipkin
+  zipkin:
+      image: openzipkin/zipkin:latest
+      container_name: movie_zipkin
+      ports:
+        - "9411:9411"
+      networks:
+        - movie_network
+
   # ========================================
   # PHẦN 2: CÁC MICROSERVICES CỦA DỰ ÁN
   # ========================================
@@ -117,6 +126,7 @@ services:
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
     depends_on:
       eureka-service:
@@ -131,11 +141,11 @@ services:
       context: .
       dockerfile: services/user-service/Dockerfile
     container_name: movie_user
-    ports:
-      - "8081:8081"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - JWT_SECRET=${JWT_SECRET}
       - DB_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/user_db
     depends_on:
@@ -153,11 +163,10 @@ services:
       context: .
       dockerfile: services/movie-service/Dockerfile
     container_name: movie_service
-    ports:
-      - "8082:8082"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - DB_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/movie_db
       - SPRING_DATA_REDIS_HOST=redis-cache
@@ -179,11 +188,10 @@ services:
       context: .
       dockerfile: services/cinema-service/Dockerfile
     container_name: movie_cinema
-    ports:
-      - "8083:8083"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - DB_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/cinema_db
       - SPRING_DATA_REDIS_HOST=redis-cache
@@ -205,11 +213,10 @@ services:
       context: .
       dockerfile: services/showtime-service/Dockerfile
     container_name: movie_showtime
-    ports:
-      - "8084:8084"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - DB_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/showtime_db
     depends_on:
@@ -227,17 +234,18 @@ services:
       context: .
       dockerfile: services/booking-service/Dockerfile
     container_name: movie_booking
-    ports:
-      - "8085:8085"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
       - DB_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/booking_db
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - SPRING_DATA_REDIS_HOST=redis-cache
       - SPRING_DATA_REDIS_PORT=6379
+      - APP_REDIS_EMBEDDED_ENABLED=false
+      - APP_KAFKA_ENABLED=true
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -257,11 +265,10 @@ services:
       context: .
       dockerfile: services/notification-service/Dockerfile
     container_name: movie_notification
-    ports:
-      - "8086:8086"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       eureka-service:

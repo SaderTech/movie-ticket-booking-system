@@ -17,7 +17,7 @@ public class GetNowShowingMoviesUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'now-showing'")
+    @Cacheable(value = "movies", key = "'now-showing'", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute() {
         return movieRepository.findByStatus(MovieStatus.NOW_SHOWING)

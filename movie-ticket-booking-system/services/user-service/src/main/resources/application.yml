@@ -25,7 +25,7 @@ spring:
 # JWT CONFIG
 # =====================
 jwt:
-  secret: movie-ticket-secret-key-2026-super-secret
+  secret: ${JWT_SECRET}
   expiration: 86400000
 
 
@@ -50,3 +50,11 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
