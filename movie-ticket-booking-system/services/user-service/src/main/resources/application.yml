@@ -1,9 +1,11 @@
 server:
   port: 8081
 
+
 spring:
   application:
     name: USER-SERVICE
+
 
   datasource:
     url: jdbc:postgresql://localhost:5432/user_db
@@ -16,6 +18,31 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
+
+
+
+# =====================
+# JWT CONFIG
+# =====================
+jwt:
+  secret: movie-ticket-secret-key-2026-super-secret
+  expiration: 86400000
+
+
+
+# =====================
+# SWAGGER
+# =====================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+  api-docs:
+    path: /v3/api-docs
+
+
 
 eureka:
   client:
