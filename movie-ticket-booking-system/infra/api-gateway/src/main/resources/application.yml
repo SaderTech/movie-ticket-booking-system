@@ -5,10 +5,9 @@ spring:
   application:
     name: api-gateway
 
-  # 1. THÊM KẾT NỐI REDIS VÀO ĐÂY
   data:
     redis:
-      host: movie_redis # Tên service redis trong docker-compose
+      host: movie_redis
       port: 6379
 
   cloud:
@@ -17,7 +16,7 @@ spring:
         - id: user-service-route
           uri: lb://USER-SERVICE
           predicates:
-            - Path=/api/users/**
+            - Path=/api/users/**,/api/auth/**
           filters:
             - StripPrefix=0
 
@@ -52,7 +51,7 @@ spring:
         - id: booking-service-route
           uri: lb://BOOKING-SERVICE
           predicates:
-            - Path=/api/bookings/**
+            - Path=/api/bookings/**,/api/admin/booking-settings/**
           filters:
             - StripPrefix=0
 
@@ -87,6 +86,12 @@ app:
   jwt:
     secret: ${JWT_SECRET}
 management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
   endpoints:
     web:
       exposure:
