@@ -53,4 +53,11 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
             LocalTime startTime
     );
 
+    // Lấy suất chiếu còn vé theo phim và ngày
+    List<Showtime> findByMovieIdAndShowDateAndStatus(
+            Long movieId,
+            LocalDate showDate,
+            ShowtimeStatus status
+    );
+
 }
