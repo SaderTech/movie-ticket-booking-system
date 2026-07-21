@@ -16,7 +16,7 @@ public class GetAllGenresUseCase {
     private final GenreRepository genreRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "genres", key = "'all'")
+    @Cacheable(value = "genres", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<GenreResponse> execute() {
         return genreRepository.findAll()

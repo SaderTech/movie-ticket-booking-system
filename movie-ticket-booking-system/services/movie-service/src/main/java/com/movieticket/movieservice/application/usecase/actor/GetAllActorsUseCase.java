@@ -16,7 +16,7 @@ public class GetAllActorsUseCase {
     private final ActorRepository actorRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "actors", key = "'all'")
+    @Cacheable(value = "actors", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<PersonResponse> execute() {
         return actorRepository.findAll()

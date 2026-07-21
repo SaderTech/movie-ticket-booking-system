@@ -16,7 +16,7 @@ public class GetAllDirectorsUseCase {
     private final DirectorRepository directorRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "directors", key = "'all'")
+    @Cacheable(value = "directors", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<PersonResponse> execute() {
         return directorRepository.findAll()

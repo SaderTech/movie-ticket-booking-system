@@ -17,7 +17,7 @@ public class GetComingSoonMoviesUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'coming-soon'")
+    @Cacheable(value = "movies", key = "'coming-soon'", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute() {
         return movieRepository.findByStatus(MovieStatus.COMING_SOON)
