@@ -1,6 +1,6 @@
 package com.movieticket.cinemaservice.application.usecase.seattype;
 
-import com.movieticket.cinemaservice.api.dto.response.SeatTypeResponse;
+import com.movieticket.cinemaservice.application.dto.response.SeatTypeResponse;
 import com.movieticket.cinemaservice.infrastructure.repository.SeatTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

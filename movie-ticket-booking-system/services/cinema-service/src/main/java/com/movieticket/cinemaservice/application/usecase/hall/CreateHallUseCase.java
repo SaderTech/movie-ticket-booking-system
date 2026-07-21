@@ -1,9 +1,9 @@
 package com.movieticket.cinemaservice.application.usecase.hall;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateHallRequest;
-import com.movieticket.cinemaservice.api.dto.response.HallResponse;
-import com.movieticket.cinemaservice.api.exception.BusinessException;
-import com.movieticket.cinemaservice.api.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.application.dto.request.CreateHallRequest;
+import com.movieticket.cinemaservice.application.dto.response.HallDetailResponse;
+import com.movieticket.cinemaservice.application.exception.BusinessException;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
 import com.movieticket.cinemaservice.domain.aggregate.cinema.Cinema;
 import com.movieticket.cinemaservice.domain.aggregate.hall.Hall;
 import com.movieticket.cinemaservice.infrastructure.repository.CinemaRepository;
@@ -22,22 +22,23 @@ public class CreateHallUseCase {
     @Transactional
     @CacheEvict(value = "halls", allEntries = true)
 
-    public HallResponse execute(CreateHallRequest request) {
+    public HallDetailResponse execute(CreateHallRequest request) {
         Cinema cinema = cinemaRepository.findById(request.cinemaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cinema not found with id: " + request.cinemaId()));
 
-        if (hallRepository.existsByCinema_IdAndNameIgnoreCase(request.cinemaId(), request.name())) {
-            throw new BusinessException("Hall name already exists in this cinema: " + request.name());
+        String normalizedName = request.name().trim();
+        if (hallRepository.existsByCinema_IdAndNameIgnoreCase(request.cinemaId(), normalizedName)) {
+            throw new BusinessException("Hall name already exists in this cinema: " + normalizedName);
         }
 
         Hall hall = new Hall(
                 cinema,
-                request.name(),
+                normalizedName,
                 request.capacity(),
                 request.hallType(),
                 request.status()
         );
 
-        return HallResponse.from(hallRepository.save(hall));
+        return HallDetailResponse.from(hallRepository.save(hall));
     }
 }

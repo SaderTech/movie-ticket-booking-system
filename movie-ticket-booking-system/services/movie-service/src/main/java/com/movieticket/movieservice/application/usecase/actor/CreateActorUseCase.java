@@ -1,7 +1,7 @@
 package com.movieticket.movieservice.application.usecase.actor;
 
-import com.movieticket.movieservice.api.dto.request.CreateActorRequest;
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.dto.request.CreateActorRequest;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
 import com.movieticket.movieservice.domain.aggregate.actor.Actor;
 import com.movieticket.movieservice.infrastructure.repository.ActorRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,10 @@ public class CreateActorUseCase {
     @CacheEvict(value = "actors", allEntries = true)
 
     public PersonResponse execute(CreateActorRequest request) {
+        String normalizedName = normalizeName(request.name());
+
         Actor actor = new Actor(
-                request.name(),
+                normalizedName,
                 request.avatarUrl(),
                 request.biography(),
                 request.birthDate()
@@ -36,5 +38,9 @@ public class CreateActorUseCase {
                 savedActor.getBirthDate(),
                 null
         );
+    }
+
+    private String normalizeName(String name) {
+        return name.trim().replaceAll("\\s+", " ");
     }
 }

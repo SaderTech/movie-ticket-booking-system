@@ -17,19 +17,27 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
-@Table(name = "movies")
+@Table(
+        name = "movies",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_movie_title_release_date",
+                        columnNames = {"title", "release_date"}
+                )
+        }
+)
 @Getter
-@Setter
 @NoArgsConstructor
 public class Movie {
 
@@ -37,7 +45,7 @@ public class Movie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -46,17 +54,17 @@ public class Movie {
     @Column(name = "duration_minutes", nullable = false)
     private Integer durationMinutes;
 
-    @Column(name = "trailer_url", length = 500)
+    @Column(name = "trailer_url", nullable = false, length = 500)
     private String trailerUrl;
 
     @Column(name = "poster_url", length = 500)
     private String posterUrl;
 
-    @Column(name = "release_date")
+    @Column(name = "release_date", nullable = false)
     private LocalDate releaseDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "age_rating", length = 20)
+    @Column(name = "age_rating", nullable = false, length = 20)
     private AgeRating ageRating;
 
     @Enumerated(EnumType.STRING)
@@ -88,19 +96,18 @@ public class Movie {
             AgeRating ageRating,
             MovieStatus status
     ) {
-        validateTitle(title);
-        validateDuration(durationMinutes);
+        MovieStatus effectiveStatus = status == null ? MovieStatus.COMING_SOON : status;
+        validateBusinessRules(title, description, durationMinutes, trailerUrl, posterUrl,
+                releaseDate, ageRating, effectiveStatus);
 
-        this.title = title;
-        this.description = description;
+        this.title = normalizeRequired(title);
+        this.description = normalizeNullable(description);
         this.durationMinutes = durationMinutes;
-        this.trailerUrl = trailerUrl;
-        this.posterUrl = posterUrl;
+        this.trailerUrl = normalizeRequired(trailerUrl);
+        this.posterUrl = normalizeNullable(posterUrl);
         this.releaseDate = releaseDate;
         this.ageRating = ageRating;
-        this.status = status == null ? MovieStatus.COMING_SOON : status;
-
-        validateReleaseDateForComingSoon();
+        this.status = effectiveStatus;
     }
 
     public void updateBasicInfo(
@@ -113,19 +120,19 @@ public class Movie {
             AgeRating ageRating,
             MovieStatus status
     ) {
-        validateTitle(title);
-        validateDuration(durationMinutes);
+        MovieStatus effectiveStatus = status == null ? this.status : status;
+        validateBusinessRules(title, description, durationMinutes, trailerUrl, posterUrl,
+                releaseDate, ageRating, effectiveStatus);
+        validateStatusTransition(effectiveStatus);
 
-        this.title = title;
-        this.description = description;
+        this.title = normalizeRequired(title);
+        this.description = normalizeNullable(description);
         this.durationMinutes = durationMinutes;
-        this.trailerUrl = trailerUrl;
-        this.posterUrl = posterUrl;
+        this.trailerUrl = normalizeRequired(trailerUrl);
+        this.posterUrl = normalizeNullable(posterUrl);
         this.releaseDate = releaseDate;
         this.ageRating = ageRating;
-        this.status = status == null ? MovieStatus.COMING_SOON : status;
-
-        validateReleaseDateForComingSoon();
+        this.status = effectiveStatus;
     }
 
     public void addGenre(Genre genre) {
@@ -134,11 +141,13 @@ public class Movie {
         }
 
         boolean exists = this.movieGenres.stream()
-                .anyMatch(movieGenre -> movieGenre.getGenre().getId().equals(genre.getId()));
+                .anyMatch(movieGenre -> Objects.equals(movieGenre.getGenre().getId(), genre.getId()));
 
-        if (!exists) {
-            this.movieGenres.add(new MovieGenre(this, genre));
+        if (exists) {
+            throw new IllegalArgumentException("Genre is already assigned to this movie: " + genre.getId());
         }
+
+        this.movieGenres.add(new MovieGenre(this, genre));
     }
 
     public void addActor(Actor actor, String roleName) {
@@ -147,11 +156,13 @@ public class Movie {
         }
 
         boolean exists = this.movieActors.stream()
-                .anyMatch(movieActor -> movieActor.getActor().getId().equals(actor.getId()));
+                .anyMatch(movieActor -> Objects.equals(movieActor.getActor().getId(), actor.getId()));
 
-        if (!exists) {
-            this.movieActors.add(new MovieActor(this, actor, roleName));
+        if (exists) {
+            throw new IllegalArgumentException("Actor is already assigned to this movie: " + actor.getId());
         }
+
+        this.movieActors.add(new MovieActor(this, actor, roleName));
     }
 
     public void addDirector(Director director) {
@@ -160,11 +171,13 @@ public class Movie {
         }
 
         boolean exists = this.movieDirectors.stream()
-                .anyMatch(movieDirector -> movieDirector.getDirector().getId().equals(director.getId()));
+                .anyMatch(movieDirector -> Objects.equals(movieDirector.getDirector().getId(), director.getId()));
 
-        if (!exists) {
-            this.movieDirectors.add(new MovieDirector(this, director));
+        if (exists) {
+            throw new IllegalArgumentException("Director is already assigned to this movie: " + director.getId());
         }
+
+        this.movieDirectors.add(new MovieDirector(this, director));
     }
 
     public void clearGenres() {
@@ -179,28 +192,115 @@ public class Movie {
         this.movieDirectors.clear();
     }
 
+    public void startShowing() {
+        if (this.status != MovieStatus.COMING_SOON) {
+            throw new IllegalStateException("Only COMING_SOON movie can start showing");
+        }
+
+        if (this.releaseDate.isAfter(LocalDate.now())) {
+            throw new IllegalStateException("Movie cannot start showing before its release date");
+        }
+
+        this.status = MovieStatus.NOW_SHOWING;
+    }
+
     public void endMovie() {
+        if (this.status != MovieStatus.NOW_SHOWING) {
+            throw new IllegalStateException("Only NOW_SHOWING movie can be ended");
+        }
+
         this.status = MovieStatus.ENDED;
     }
 
-    private void validateTitle(String title) {
+    private void validateBusinessRules(
+            String title,
+            String description,
+            Integer durationMinutes,
+            String trailerUrl,
+            String posterUrl,
+            LocalDate releaseDate,
+            AgeRating ageRating,
+            MovieStatus status
+    ) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Movie title must not be blank");
         }
-    }
 
-    private void validateDuration(Integer durationMinutes) {
-        if (durationMinutes == null || durationMinutes <= 0) {
-            throw new IllegalArgumentException("Movie duration must be greater than 0");
+        if (title.trim().length() > 255) {
+            throw new IllegalArgumentException("Movie title must not exceed 255 characters");
         }
+
+        if (description != null && description.length() > 5000) {
+            throw new IllegalArgumentException("Movie description must not exceed 5000 characters");
+        }
+
+        if (durationMinutes == null || durationMinutes <= 0 || durationMinutes > 600) {
+            throw new IllegalArgumentException("Movie duration must be between 1 and 600 minutes");
+        }
+
+        if (trailerUrl == null || trailerUrl.isBlank()) {
+            throw new IllegalArgumentException("Trailer URL must not be blank");
+        }
+
+        if (trailerUrl.trim().length() > 500) {
+            throw new IllegalArgumentException("Trailer URL must not exceed 500 characters");
+        }
+
+        if (posterUrl != null && posterUrl.trim().length() > 500) {
+            throw new IllegalArgumentException("Poster URL must not exceed 500 characters");
+        }
+
+        if (releaseDate == null) {
+            throw new IllegalArgumentException("Release date must not be null");
+        }
+
+        if (ageRating == null) {
+            throw new IllegalArgumentException("Age rating must not be null");
+        }
+
+        if (status == null) {
+            throw new IllegalArgumentException("Movie status must not be null");
+        }
+
+        validateReleaseDateForStatus(releaseDate, status);
     }
 
-    private void validateReleaseDateForComingSoon() {
-        if (this.status == MovieStatus.COMING_SOON
-                && this.releaseDate != null
-                && this.releaseDate.isBefore(LocalDate.now())) {
+    private void validateReleaseDateForStatus(LocalDate releaseDate, MovieStatus status) {
+        if (status == MovieStatus.COMING_SOON && releaseDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Release date cannot be in the past for COMING_SOON movie");
         }
+
+        if ((status == MovieStatus.NOW_SHOWING || status == MovieStatus.ENDED)
+                && releaseDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Release date cannot be in the future for " + status + " movie");
+        }
+    }
+
+    private void validateStatusTransition(MovieStatus nextStatus) {
+        if (this.status == null || this.status == nextStatus) {
+            return;
+        }
+
+        boolean validTransition =
+                (this.status == MovieStatus.COMING_SOON && nextStatus == MovieStatus.NOW_SHOWING)
+                        || (this.status == MovieStatus.NOW_SHOWING && nextStatus == MovieStatus.ENDED);
+
+        if (!validTransition) {
+            throw new IllegalStateException(
+                    "Invalid movie status transition: " + this.status + " -> " + nextStatus
+            );
+        }
+    }
+
+    private String normalizeRequired(String value) {
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     @PrePersist

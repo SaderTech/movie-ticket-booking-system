@@ -1,8 +1,8 @@
 package com.movieticket.movieservice.api.controller;
 
-import com.movieticket.movieservice.api.dto.request.CreateActorRequest;
-import com.movieticket.movieservice.api.dto.request.UpdateActorRequest;
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.dto.request.CreateActorRequest;
+import com.movieticket.movieservice.application.dto.request.UpdateActorRequest;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
 import com.movieticket.movieservice.application.usecase.actor.CreateActorUseCase;
 import com.movieticket.movieservice.application.usecase.actor.GetActorByIdUseCase;
 import com.movieticket.movieservice.application.usecase.actor.GetAllActorsUseCase;

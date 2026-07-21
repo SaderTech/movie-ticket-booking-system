@@ -1,8 +1,8 @@
 package com.movieticket.cinemaservice.api.controller;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateSeatRequest;
-import com.movieticket.cinemaservice.api.dto.request.UpdateSeatRequest;
-import com.movieticket.cinemaservice.api.dto.response.SeatResponse;
+import com.movieticket.cinemaservice.application.dto.request.CreateSeatRequest;
+import com.movieticket.cinemaservice.application.dto.request.UpdateSeatRequest;
+import com.movieticket.cinemaservice.application.dto.response.SeatResponse;
 import com.movieticket.cinemaservice.application.usecase.seat.CreateSeatUseCase;
 import com.movieticket.cinemaservice.application.usecase.seat.GetSeatByIdUseCase;
 import com.movieticket.cinemaservice.application.usecase.seat.GetSeatsByHallIdUseCase;

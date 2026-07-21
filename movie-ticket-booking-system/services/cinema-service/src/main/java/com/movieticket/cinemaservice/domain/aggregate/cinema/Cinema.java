@@ -74,11 +74,11 @@ public class Cinema {
             BigDecimal longitude,
             CinemaStatus status
     ) {
-        validateName(name);
-        this.name = name;
-        this.address = address;
-        this.city = city;
-        this.contactPhone = contactPhone;
+        validateRequiredFields(name, address, city);
+        this.name = name.trim();
+        this.address = address.trim();
+        this.city = city.trim();
+        this.contactPhone = contactPhone == null ? null : contactPhone.trim();
         this.latitude = latitude;
         this.longitude = longitude;
         this.status = status == null ? CinemaStatus.ACTIVE : status;
@@ -93,19 +93,28 @@ public class Cinema {
             BigDecimal longitude,
             CinemaStatus status
     ) {
-        validateName(name);
-        this.name = name;
-        this.address = address;
-        this.city = city;
-        this.contactPhone = contactPhone;
+        validateRequiredFields(name, address, city);
+        if (status == null) {
+            throw new IllegalArgumentException("Cinema status must not be null when updating");
+        }
+        this.name = name.trim();
+        this.address = address.trim();
+        this.city = city.trim();
+        this.contactPhone = contactPhone == null ? null : contactPhone.trim();
         this.latitude = latitude;
         this.longitude = longitude;
-        this.status = status == null ? CinemaStatus.ACTIVE : status;
+        this.status = status;
     }
 
-    private void validateName(String name) {
+    private void validateRequiredFields(String name, String address, String city) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Cinema name must not be blank");
+        }
+        if (address == null || address.isBlank()) {
+            throw new IllegalArgumentException("Cinema address must not be blank");
+        }
+        if (city == null || city.isBlank()) {
+            throw new IllegalArgumentException("Cinema city must not be blank");
         }
     }
 

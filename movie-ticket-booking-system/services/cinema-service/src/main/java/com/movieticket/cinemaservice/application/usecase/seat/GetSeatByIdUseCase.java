@@ -1,14 +1,13 @@
 package com.movieticket.cinemaservice.application.usecase.seat;
 
-import com.movieticket.cinemaservice.api.dto.response.SeatResponse;
-import com.movieticket.cinemaservice.api.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.application.dto.response.SeatResponse;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
 import com.movieticket.cinemaservice.domain.aggregate.hall.Seat;
 import com.movieticket.cinemaservice.infrastructure.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.cache.annotation.CacheEvict;
 @Service
 @RequiredArgsConstructor
 public class GetSeatByIdUseCase {

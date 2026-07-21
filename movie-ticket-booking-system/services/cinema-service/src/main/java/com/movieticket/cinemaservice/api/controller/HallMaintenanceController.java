@@ -1,8 +1,8 @@
 package com.movieticket.cinemaservice.api.controller;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateHallMaintenanceRequest;
-import com.movieticket.cinemaservice.api.dto.request.UpdateMaintenanceStatusRequest;
-import com.movieticket.cinemaservice.api.dto.response.HallMaintenanceResponse;
+import com.movieticket.cinemaservice.application.dto.request.CreateHallMaintenanceRequest;
+import com.movieticket.cinemaservice.application.dto.request.UpdateMaintenanceStatusRequest;
+import com.movieticket.cinemaservice.application.dto.response.HallMaintenanceResponse;
 import com.movieticket.cinemaservice.application.usecase.maintenance.CreateMaintenanceUseCase;
 import com.movieticket.cinemaservice.application.usecase.maintenance.GetMaintenanceByIdUseCase;
 import com.movieticket.cinemaservice.application.usecase.maintenance.GetMaintenancesByHallIdUseCase;

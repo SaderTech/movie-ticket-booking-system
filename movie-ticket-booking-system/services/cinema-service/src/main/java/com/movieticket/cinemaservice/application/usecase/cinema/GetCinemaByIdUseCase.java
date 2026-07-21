@@ -1,7 +1,7 @@
 package com.movieticket.cinemaservice.application.usecase.cinema;
 
-import com.movieticket.cinemaservice.api.dto.response.CinemaResponse;
-import com.movieticket.cinemaservice.api.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.application.dto.response.CinemaResponse;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
 import com.movieticket.cinemaservice.domain.aggregate.cinema.Cinema;
 import com.movieticket.cinemaservice.infrastructure.repository.CinemaRepository;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package com.movieticket.movieservice.api.controller;
 
-import com.movieticket.movieservice.api.dto.request.CreateGenreRequest;
-import com.movieticket.movieservice.api.dto.request.UpdateGenreRequest;
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
+import com.movieticket.movieservice.application.dto.request.CreateGenreRequest;
+import com.movieticket.movieservice.application.dto.request.UpdateGenreRequest;
+import com.movieticket.movieservice.application.dto.response.GenreResponse;
 import com.movieticket.movieservice.application.usecase.genre.CreateGenreUseCase;
 import com.movieticket.movieservice.application.usecase.genre.GetAllGenresUseCase;
 import com.movieticket.movieservice.application.usecase.genre.GetGenreByIdUseCase;
