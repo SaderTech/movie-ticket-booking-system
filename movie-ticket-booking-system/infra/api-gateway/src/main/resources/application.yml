@@ -5,6 +5,12 @@ spring:
   application:
     name: api-gateway
 
+  # 1. THÊM KẾT NỐI REDIS VÀO ĐÂY
+  data:
+    redis:
+      host: movie_redis # Tên service redis trong docker-compose
+      port: 6379
+
   cloud:
     gateway:
       routes:
@@ -21,6 +27,13 @@ spring:
             - Path=/api/movies/**
           filters:
             - StripPrefix=0
+            # 2. THÊM BỘ ĐẾM RATE LIMITER CHO ROUTE NÀY
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 5
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@keyResolver}"
 
         - id: cinema-service-route
           uri: lb://CINEMA-SERVICE
