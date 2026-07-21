@@ -9,20 +9,26 @@ spring:
     url: jdbc:postgresql://localhost:5432/showtime_db
     username: postgres
     password: ${DB_PASSWORD}
+
   jpa:
     hibernate:
       ddl-auto: update
+
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 eureka:
   instance:
-    hostname: localhost
-    lease-expiration-duration-in-seconds: 10
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
     lease-renewal-interval-in-seconds: 3
+    lease-expiration-duration-in-seconds: 10
+
   client:
     register-with-eureka: true
     fetch-registry: true
+
     service-url:
       defaultZone: http://localhost:8761/eureka/

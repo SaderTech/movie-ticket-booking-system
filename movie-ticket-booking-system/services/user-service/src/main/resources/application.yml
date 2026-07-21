@@ -1,23 +1,62 @@
 server:
   port: 8081
 
+
 spring:
   application:
     name: USER-SERVICE
+
 
   datasource:
     url: jdbc:postgresql://localhost:5432/user_db
     username: postgres
     password: ${DB_PASSWORD}
+
+
   jpa:
     hibernate:
       ddl-auto: update
+    open-in-view: false
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+        format_sql: true
 
+
+
+# =====================
+# JWT CONFIG
+# =====================
+jwt:
+  secret: movie-ticket-secret-key-2026-super-secret
+  expiration: 86400000
+
+
+
+# =====================
+# SWAGGER
+# =====================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+  api-docs:
+    path: /v3/api-docs
+
+
+
+# =====================
+# EUREKA CLIENT
+# =====================
 eureka:
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
   client:
     register-with-eureka: true
     fetch-registry: true
