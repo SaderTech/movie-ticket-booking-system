@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
       POSTGRES_MULTIPLE_DATABASES: user_db,movie_db,cinema_db,showtime_db,booking_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/init-scripts:/docker-entrypoint-initdb.d
