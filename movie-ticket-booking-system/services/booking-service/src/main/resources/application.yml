@@ -73,9 +73,10 @@ eureka:
 
 app:
   redis:
-    enabled: true
+    embedded:
+      enabled: ${APP_REDIS_EMBEDDED_ENABLED:false}
   kafka:
-    enabled: false
+    enabled: ${APP_KAFKA_ENABLED:false}
 
 vnpay:
   tmn-code: TU8GEVIB

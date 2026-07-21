@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 @Configuration
-@ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.redis.embedded.enabled", havingValue = "true")
 @Slf4j
 public class EmbeddedRedisConfig {
 

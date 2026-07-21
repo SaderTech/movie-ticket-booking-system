@@ -16,6 +16,7 @@ import com.movieticket.userservice.exception.ResourceNotFoundException;
 
 import com.movieticket.userservice.infrastructure.persistence.entity.UserJpaEntity;
 import com.movieticket.userservice.infrastructure.persistence.repository.JpaUserRepository;
+import com.movieticket.userservice.infrastructure.persistence.repository.JpaUserRoleRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 
@@ -34,6 +36,8 @@ public class AuthServiceImpl implements AuthService {
 
 
     private final JpaUserRepository userRepository;
+
+    private final JpaUserRoleRepository userRoleRepository;
 
 
     private final PasswordEncoder passwordEncoder;
@@ -207,8 +211,8 @@ public class AuthServiceImpl implements AuthService {
                 jwtService.generateToken(
 
                         user.getId(),
-
-                        user.getEmail()
+                        user.getEmail(),
+                        getRoleNames(user.getId())
 
                 );
 
@@ -320,8 +324,8 @@ public class AuthServiceImpl implements AuthService {
                 jwtService.generateToken(
 
                         user.getId(),
-
-                        user.getEmail()
+                        user.getEmail(),
+                        getRoleNames(user.getId())
 
                 );
 
@@ -359,6 +363,11 @@ public class AuthServiceImpl implements AuthService {
 
                 .build();
 
+    }
+
+    private List<String> getRoleNames(Long userId) {
+        List<String> roles = userRoleRepository.findRoleNamesByUserId(userId);
+        return roles.isEmpty() ? List.of("USER") : roles;
     }
 
 

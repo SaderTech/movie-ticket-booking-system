@@ -141,12 +141,11 @@ services:
       context: .
       dockerfile: services/user-service/Dockerfile
     container_name: movie_user
-    ports:
-      - "8081:8081"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - JWT_SECRET=${JWT_SECRET}
       - DB_PASSWORD=${DB_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/user_db
     depends_on:
@@ -164,8 +163,6 @@ services:
       context: .
       dockerfile: services/movie-service/Dockerfile
     container_name: movie_service
-    ports:
-      - "8082:8082"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
@@ -191,8 +188,6 @@ services:
       context: .
       dockerfile: services/cinema-service/Dockerfile
     container_name: movie_cinema
-    ports:
-      - "8083:8083"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
@@ -218,8 +213,6 @@ services:
       context: .
       dockerfile: services/showtime-service/Dockerfile
     container_name: movie_showtime
-    ports:
-      - "8084:8084"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
@@ -241,8 +234,6 @@ services:
       context: .
       dockerfile: services/booking-service/Dockerfile
     container_name: movie_booking
-    ports:
-      - "8085:8085"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
@@ -253,6 +244,8 @@ services:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - SPRING_DATA_REDIS_HOST=redis-cache
       - SPRING_DATA_REDIS_PORT=6379
+      - APP_REDIS_EMBEDDED_ENABLED=false
+      - APP_KAFKA_ENABLED=true
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -272,8 +265,6 @@ services:
       context: .
       dockerfile: services/notification-service/Dockerfile
     container_name: movie_notification
-    ports:
-      - "8086:8086"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/

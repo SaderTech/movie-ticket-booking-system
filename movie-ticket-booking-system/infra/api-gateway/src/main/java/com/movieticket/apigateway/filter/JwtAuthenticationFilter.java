@@ -58,7 +58,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             String userId = claims.get("userId") != null ? claims.get("userId").toString() : "";
             String userEmail = claims.getSubject() != null ? claims.getSubject() : "";
 
-            if (isCinemaApiPath(path) && isWriteMethod(method) && !hasAdminRole(claims)) {
+            if (isAdminProtectedWrite(path, method) && !hasAdminRole(claims)) {
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }
@@ -94,7 +94,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublicEndpoint(String path, HttpMethod method) {
-        if (HttpMethod.OPTIONS.equals(method) || path.startsWith("/api/auth/")) {
+        if (HttpMethod.OPTIONS.equals(method)
+                || path.startsWith("/api/auth/")
+                || path.equals("/ping")
+                || path.startsWith("/api/v1/qr-codes/")) {
             return true;
         }
 
@@ -105,18 +108,33 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (!HttpMethod.GET.equals(method)) {
             return false;
         }
-        return path.startsWith("/api/cinemas")
+        return path.startsWith("/api/movies")
+                || path.startsWith("/api/actors")
+                || path.startsWith("/api/directors")
+                || path.startsWith("/api/genres")
+                || path.startsWith("/api/showtimes")
+                || path.startsWith("/api/cinemas")
                 || path.startsWith("/api/halls")
                 || path.startsWith("/api/seats")
                 || path.startsWith("/api/seat-types");
     }
 
-    private boolean isCinemaApiPath(String path) {
+    private boolean isAdminProtectedWrite(String path, HttpMethod method) {
+        if (!isWriteMethod(method)) {
+            return false;
+        }
+
         return path.startsWith("/api/cinemas")
                 || path.startsWith("/api/halls")
                 || path.startsWith("/api/seats")
                 || path.startsWith("/api/seat-types")
-                || path.startsWith("/api/hall-maintenances");
+                || path.startsWith("/api/hall-maintenances")
+                || path.startsWith("/api/movies")
+                || path.startsWith("/api/actors")
+                || path.startsWith("/api/directors")
+                || path.startsWith("/api/genres")
+                || path.startsWith("/api/showtimes")
+                || path.startsWith("/api/admin/");
     }
 
     private boolean isWriteMethod(HttpMethod method) {

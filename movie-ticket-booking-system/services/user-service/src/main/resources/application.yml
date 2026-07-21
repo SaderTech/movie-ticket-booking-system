@@ -25,7 +25,7 @@ spring:
 # JWT CONFIG
 # =====================
 jwt:
-  secret: movie-ticket-secret-key-2026-super-secret
+  secret: ${JWT_SECRET}
   expiration: 86400000
 
 

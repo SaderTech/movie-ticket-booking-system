@@ -23,7 +23,7 @@ spring:
         - id: movie-service-route
           uri: lb://MOVIE-SERVICE
           predicates:
-            - Path=/api/movies/**
+            - Path=/api/movies/**,/api/actors/**,/api/directors/**,/api/genres/**
           filters:
             - StripPrefix=0
             # 2. THÊM BỘ ĐẾM RATE LIMITER CHO ROUTE NÀY
@@ -52,6 +52,13 @@ spring:
           uri: lb://BOOKING-SERVICE
           predicates:
             - Path=/api/bookings/**,/api/admin/booking-settings/**
+          filters:
+            - StripPrefix=0
+
+        - id: notification-service-route
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/v1/**,/ping
           filters:
             - StripPrefix=0
 
