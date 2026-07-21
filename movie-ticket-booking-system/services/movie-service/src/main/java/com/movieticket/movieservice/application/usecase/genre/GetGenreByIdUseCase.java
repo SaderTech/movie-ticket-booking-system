@@ -1,7 +1,7 @@
 package com.movieticket.movieservice.application.usecase.genre;
 
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
-import com.movieticket.movieservice.api.exception.ResourceNotFoundException;
+import com.movieticket.movieservice.application.dto.response.GenreResponse;
+import com.movieticket.movieservice.application.exception.ResourceNotFoundException;
 import com.movieticket.movieservice.domain.aggregate.genre.Genre;
 import com.movieticket.movieservice.infrastructure.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;

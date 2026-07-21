@@ -4,14 +4,10 @@ import com.movieticket.bookingservice.domain.enums.OutboxStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class BookingEventOutbox {
@@ -28,4 +24,22 @@ public class BookingEventOutbox {
     private String lastError;
     private LocalDateTime createdAt;
     private LocalDateTime publishedAt;
+
+    public void markPublished() {
+        status = OutboxStatus.PUBLISHED;
+        publishedAt = LocalDateTime.now();
+    }
+
+    public void markFailed(String error) {
+        status = OutboxStatus.FAILED;
+        lastError = error;
+    }
+
+    public void incrementRetry() {
+        if (retryCount == null) {
+            retryCount = 1;
+        } else {
+            retryCount++;
+        }
+    }
 }

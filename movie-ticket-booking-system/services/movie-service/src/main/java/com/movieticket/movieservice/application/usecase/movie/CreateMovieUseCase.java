@@ -1,9 +1,9 @@
 package com.movieticket.movieservice.application.usecase.movie;
 
-import com.movieticket.movieservice.api.dto.request.CreateMovieRequest;
-import com.movieticket.movieservice.api.dto.response.MovieResponse;
-import com.movieticket.movieservice.api.exception.BusinessException;
-import com.movieticket.movieservice.application.usecase.common.MovieReferenceResolver;
+import com.movieticket.movieservice.application.dto.request.CreateMovieRequest;
+import com.movieticket.movieservice.application.dto.response.MovieResponse;
+import com.movieticket.movieservice.application.exception.BusinessException;
+import com.movieticket.movieservice.application.service.MovieReferenceResolver;
 import com.movieticket.movieservice.domain.aggregate.movie.Movie;
 import com.movieticket.movieservice.infrastructure.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +22,20 @@ public class CreateMovieUseCase {
     @CacheEvict(value = "movies", allEntries = true)
 
     public MovieResponse execute(CreateMovieRequest request) {
-        if (movieRepository.existsByTitleIgnoreCase(request.title())) {
-            throw new BusinessException("Movie title already exists: " + request.title());
+        String normalizedTitle = normalizeTitle(request.title());
+
+        if (movieRepository.existsByTitleIgnoreCaseAndReleaseDate(
+                normalizedTitle,
+                request.releaseDate()
+        )) {
+            throw new BusinessException(
+                    "Movie already exists with title and release date: "
+                            + normalizedTitle + " - " + request.releaseDate()
+            );
         }
 
         Movie movie = new Movie(
-                request.title(),
+                normalizedTitle,
                 request.description(),
                 request.durationMinutes(),
                 request.trailerUrl(),
@@ -44,5 +52,9 @@ public class CreateMovieUseCase {
         Movie savedMovie = movieRepository.save(movie);
 
         return MovieResponse.from(savedMovie);
+    }
+
+    private String normalizeTitle(String title) {
+        return title.trim().replaceAll("\\s+", " ");
     }
 }

@@ -4,14 +4,10 @@ import com.movieticket.bookingservice.domain.enums.SagaStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class SagaTransaction {
@@ -23,4 +19,26 @@ public class SagaTransaction {
     private String failureReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public void startStep(String step) {
+        status = SagaStatus.STARTED;
+        currentStep = step;
+    }
+
+    public void complete() {
+        status = SagaStatus.COMPLETED;
+    }
+
+    public void fail(String reason) {
+        status = SagaStatus.FAILED;
+        failureReason = reason;
+    }
+
+    public void startCompensation() {
+        status = SagaStatus.COMPENSATING;
+    }
+
+    public void compensate() {
+        status = SagaStatus.COMPENSATED;
+    }
 }

@@ -1,9 +1,8 @@
 package com.movieticket.movieservice.application.usecase.director;
 
-import com.movieticket.movieservice.api.dto.request.UpdateDirectorRequest;
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
-import com.movieticket.movieservice.api.exception.BusinessException;
-import com.movieticket.movieservice.api.exception.ResourceNotFoundException;
+import com.movieticket.movieservice.application.dto.request.UpdateDirectorRequest;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.exception.ResourceNotFoundException;
 import com.movieticket.movieservice.domain.aggregate.director.Director;
 import com.movieticket.movieservice.infrastructure.repository.DirectorRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,14 +25,10 @@ public class UpdateDirectorUseCase {
     public PersonResponse execute(Long id, UpdateDirectorRequest request) {
         Director director = directorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Director not found with id: " + id));
-
-        if (!director.getName().equalsIgnoreCase(request.name())
-                && directorRepository.existsByNameIgnoreCase(request.name())) {
-            throw new BusinessException("Director name already exists: " + request.name());
-        }
+        String normalizedName = normalizeName(request.name());
 
         director.update(
-                request.name(),
+                normalizedName,
                 request.biography(),
                 request.birthDate()
         );
@@ -48,5 +43,9 @@ public class UpdateDirectorUseCase {
                 savedDirector.getBirthDate(),
                 null
         );
+    }
+
+    private String normalizeName(String name) {
+        return name.trim().replaceAll("\\s+", " ");
     }
 }

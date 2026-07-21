@@ -79,11 +79,14 @@ public class Seat {
         validateSeatType(seatType);
         validateRowName(rowName);
         validateSeatNumber(seatNumber);
+        if (status == null) {
+            throw new IllegalArgumentException("Seat status must not be null when updating");
+        }
 
         this.seatType = seatType;
         this.rowName = rowName.trim().toUpperCase();
         this.seatNumber = seatNumber;
-        this.status = status == null ? SeatStatus.ACTIVE : status;
+        this.status = status;
     }
 
     private void validateHall(Hall hall) {
@@ -101,6 +104,9 @@ public class Seat {
     private void validateRowName(String rowName) {
         if (rowName == null || rowName.isBlank()) {
             throw new IllegalArgumentException("Row name must not be blank");
+        }
+        if (rowName.trim().length() > 10) {
+            throw new IllegalArgumentException("Row name must not exceed 10 characters");
         }
     }
 

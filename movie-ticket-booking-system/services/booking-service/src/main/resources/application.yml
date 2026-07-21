@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/booking_db
     username: postgres
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -24,9 +24,6 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
-  autoconfigure:
-    exclude: org.redisson.spring.starter.RedissonAutoConfigurationV2
 
   data:
     redis:
@@ -49,8 +46,7 @@ spring:
           seatHoldExpiredEvent:com.movieticket.bookingservice.infrastructure.kafka.event.SeatHoldExpiredEvent,
           bookingConfirmedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingConfirmedEvent,
           ticketBookedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.TicketBookedEvent,
-          bookingCancelledEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingCancelledEvent,
-          paymentRefundRequestedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.PaymentRefundRequestedEvent
+          bookingCancelledEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingCancelledEvent
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
 
@@ -77,9 +73,15 @@ eureka:
 
 app:
   redis:
-    enabled: false
+    enabled: true
   kafka:
     enabled: false
+
+vnpay:
+  tmn-code: TU8GEVIB
+  hash-secret: LENI87G7NEE3466DIWN9M0AXDXDV1PN5
+  url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8085/api/bookings/vnpay-return
 
 logging:
   level:

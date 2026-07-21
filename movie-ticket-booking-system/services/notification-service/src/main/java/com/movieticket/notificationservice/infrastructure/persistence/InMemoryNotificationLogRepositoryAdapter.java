@@ -1,6 +1,6 @@
 package com.movieticket.notificationservice.infrastructure.persistence;
 
-import com.movieticket.notificationservice.domain.model.NotificationLog;
+import com.movieticket.notificationservice.domain.entity.NotificationLog;
 import com.movieticket.notificationservice.domain.repository.NotificationLogRepository;
 import org.springframework.stereotype.Component;
 
@@ -27,10 +27,41 @@ public class InMemoryNotificationLogRepositoryAdapter implements NotificationLog
     }
 
     @Override
+    public Optional<NotificationLog> findBySourceEventIdAndSourceTopic(String sourceEventId, String sourceTopic) {
+        if (sourceEventId == null || sourceEventId.isBlank() || sourceTopic == null || sourceTopic.isBlank()) {
+            return Optional.empty();
+        }
+
+        return storage.values()
+                .stream()
+                .filter(NotificationLog::hasIdempotencyKey)
+                .filter(log -> sourceEventId.equals(log.getSourceEventId()) && sourceTopic.equals(log.getSourceTopic()))
+                .findFirst();
+    }
+
+    @Override
     public List<NotificationLog> findAll() {
         return storage.values()
                 .stream()
                 .sorted(Comparator.comparing(NotificationLog::getCreatedAt).reversed())
+                .toList();
+    }
+
+    @Override
+    public List<NotificationLog> findDueRetries() {
+        return storage.values()
+                .stream()
+                .filter(NotificationLog::isDueToRetry)
+                .sorted(Comparator.comparing(NotificationLog::getNextRetryAt))
+                .toList();
+    }
+
+    @Override
+    public List<NotificationLog> findDueScheduledNotifications() {
+        return storage.values()
+                .stream()
+                .filter(NotificationLog::isDueToSend)
+                .sorted(Comparator.comparing(NotificationLog::getScheduledAt))
                 .toList();
     }
 }

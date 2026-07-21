@@ -79,7 +79,7 @@ public class Hall {
         validateCapacity(capacity);
 
         this.cinema = cinema;
-        this.name = name;
+        this.name = name.trim();
         this.capacity = capacity;
         this.hallType = hallType == null ? HallType.STANDARD : hallType;
         this.status = status == null ? HallStatus.ACTIVE : status;
@@ -88,11 +88,17 @@ public class Hall {
     public void update(String name, Integer capacity, HallType hallType, HallStatus status) {
         validateName(name);
         validateCapacity(capacity);
+        if (hallType == null) {
+            throw new IllegalArgumentException("Hall type must not be null when updating");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("Hall status must not be null when updating");
+        }
 
-        this.name = name;
+        this.name = name.trim();
         this.capacity = capacity;
-        this.hallType = hallType == null ? HallType.STANDARD : hallType;
-        this.status = status == null ? HallStatus.ACTIVE : status;
+        this.hallType = hallType;
+        this.status = status;
     }
 
     private void validateCinema(Cinema cinema) {

@@ -10,14 +10,12 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "genres")
 @Getter
-@Setter
 @NoArgsConstructor
 public class Genre {
 
@@ -38,21 +36,40 @@ public class Genre {
     private LocalDateTime updatedAt;
 
     public Genre(String name, String description) {
-        validateName(name);
-        this.name = name;
-        this.description = description;
+        validate(name, description);
+        this.name = normalizeRequired(name);
+        this.description = normalizeNullable(description);
     }
 
     public void update(String name, String description) {
-        validateName(name);
-        this.name = name;
-        this.description = description;
+        validate(name, description);
+        this.name = normalizeRequired(name);
+        this.description = normalizeNullable(description);
     }
 
-    private void validateName(String name) {
+    private void validate(String name, String description) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Genre name must not be blank");
         }
+
+        if (name.trim().length() > 100) {
+            throw new IllegalArgumentException("Genre name must not exceed 100 characters");
+        }
+
+        if (description != null && description.length() > 2000) {
+            throw new IllegalArgumentException("Genre description must not exceed 2000 characters");
+        }
+    }
+
+    private String normalizeRequired(String value) {
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     @PrePersist

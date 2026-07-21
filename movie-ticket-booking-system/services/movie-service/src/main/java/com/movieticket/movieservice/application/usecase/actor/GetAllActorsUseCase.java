@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.actor;
 
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
 import com.movieticket.movieservice.infrastructure.repository.ActorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;

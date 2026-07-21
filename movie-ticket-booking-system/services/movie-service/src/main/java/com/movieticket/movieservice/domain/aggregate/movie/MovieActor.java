@@ -11,32 +11,43 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "movie_actors")
 @IdClass(MovieActorId.class)
 @Getter
-@Setter
 @NoArgsConstructor
 public class MovieActor {
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "movie_id")
+    @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "actor_id")
+    @JoinColumn(name = "actor_id", nullable = false)
     private Actor actor;
 
-    @Column(name = "role_name")
+    @Column(name = "role_name", nullable = false, length = 255)
     private String roleName;
 
     public MovieActor(Movie movie, Actor actor, String roleName) {
+        if (movie == null) {
+            throw new IllegalArgumentException("Movie must not be null");
+        }
+        if (actor == null) {
+            throw new IllegalArgumentException("Actor must not be null");
+        }
+        if (roleName == null || roleName.isBlank()) {
+            throw new IllegalArgumentException("Actor role must not be blank");
+        }
+        if (roleName.trim().length() > 255) {
+            throw new IllegalArgumentException("Actor role must not exceed 255 characters");
+        }
+
         this.movie = movie;
         this.actor = actor;
-        this.roleName = roleName;
+        this.roleName = roleName.trim().replaceAll("\\s+", " ");
     }
 }

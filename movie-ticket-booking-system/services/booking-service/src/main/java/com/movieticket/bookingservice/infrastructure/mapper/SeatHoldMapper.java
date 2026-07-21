@@ -5,6 +5,8 @@ import com.movieticket.bookingservice.domain.entity.SeatHoldSeat;
 import com.movieticket.bookingservice.infrastructure.jpa.SeatHoldJpaEntity;
 import com.movieticket.bookingservice.infrastructure.jpa.SeatHoldSeatJpaEntity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class SeatHoldMapper {
@@ -13,7 +15,13 @@ public class SeatHoldMapper {
         if (entity == null) {
             return null;
         }
-        SeatHold hold = SeatHold.builder()
+        List<SeatHoldSeat> domainSeats = entity.getSeats() != null
+                ? entity.getSeats().stream()
+                        .map(SeatHoldMapper::toDomainSeat)
+                        .collect(Collectors.toList())
+                : new ArrayList<>();
+
+        return SeatHold.builder()
                 .id(entity.getId())
                 .holdToken(entity.getHoldToken())
                 .userId(entity.getUserId())
@@ -22,14 +30,8 @@ public class SeatHoldMapper {
                 .expiresAt(entity.getExpiresAt())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .seats(domainSeats)
                 .build();
-
-        if (entity.getSeats() != null) {
-            hold.setSeats(entity.getSeats().stream()
-                    .map(SeatHoldMapper::toDomainSeat)
-                    .collect(Collectors.toList()));
-        }
-        return hold;
     }
 
     public static SeatHoldJpaEntity toEntity(SeatHold domain) {

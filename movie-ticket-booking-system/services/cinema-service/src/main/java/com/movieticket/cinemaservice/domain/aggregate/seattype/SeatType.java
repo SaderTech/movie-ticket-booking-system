@@ -44,7 +44,7 @@ public class SeatType {
         validateCode(code);
         validateName(name);
         this.code = code.trim().toUpperCase();
-        this.name = name;
+        this.name = name.trim();
         this.description = description;
     }
 
@@ -52,7 +52,7 @@ public class SeatType {
         validateCode(code);
         validateName(name);
         this.code = code.trim().toUpperCase();
-        this.name = name;
+        this.name = name.trim();
         this.description = description;
     }
 
@@ -60,11 +60,17 @@ public class SeatType {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Seat type code must not be blank");
         }
+        if (code.trim().length() > 50) {
+            throw new IllegalArgumentException("Seat type code must not exceed 50 characters");
+        }
     }
 
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Seat type name must not be blank");
+        }
+        if (name.trim().length() > 100) {
+            throw new IllegalArgumentException("Seat type name must not exceed 100 characters");
         }
     }
 

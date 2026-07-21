@@ -4,8 +4,6 @@ import com.movieticket.bookingservice.domain.enums.TicketStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,8 +11,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Ticket {
@@ -41,4 +37,24 @@ public class Ticket {
     private LocalDateTime issuedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public void issue() {
+        if (status != null) {
+            throw new IllegalStateException("Ticket already has status: " + status);
+        }
+        status = TicketStatus.ACTIVE;
+        issuedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    public void cancel() {
+        if (status == TicketStatus.CANCELLED) {
+            return;
+        }
+        if (status == TicketStatus.USED) {
+            throw new IllegalStateException("Cannot cancel a used ticket");
+        }
+        status = TicketStatus.CANCELLED;
+        updatedAt = LocalDateTime.now();
+    }
 }

@@ -1,9 +1,9 @@
 package com.movieticket.movieservice.application.usecase.genre;
 
-import com.movieticket.movieservice.api.dto.request.UpdateGenreRequest;
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
-import com.movieticket.movieservice.api.exception.BusinessException;
-import com.movieticket.movieservice.api.exception.ResourceNotFoundException;
+import com.movieticket.movieservice.application.dto.request.UpdateGenreRequest;
+import com.movieticket.movieservice.application.dto.response.GenreResponse;
+import com.movieticket.movieservice.application.exception.BusinessException;
+import com.movieticket.movieservice.application.exception.ResourceNotFoundException;
 import com.movieticket.movieservice.domain.aggregate.genre.Genre;
 import com.movieticket.movieservice.infrastructure.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +26,14 @@ public class UpdateGenreUseCase {
     public GenreResponse execute(Long id, UpdateGenreRequest request) {
         Genre genre = genreRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Genre not found with id: " + id));
+        String normalizedName = normalizeName(request.name());
 
-        if (!genre.getName().equalsIgnoreCase(request.name())
-                && genreRepository.existsByNameIgnoreCase(request.name())) {
-            throw new BusinessException("Genre name already exists: " + request.name());
+        if (!genre.getName().equalsIgnoreCase(normalizedName)
+                && genreRepository.existsByNameIgnoreCase(normalizedName)) {
+            throw new BusinessException("Genre name already exists: " + normalizedName);
         }
 
-        genre.update(request.name(), request.description());
+        genre.update(normalizedName, request.description());
 
         Genre savedGenre = genreRepository.save(genre);
 
@@ -41,5 +42,9 @@ public class UpdateGenreUseCase {
                 savedGenre.getName(),
                 savedGenre.getDescription()
         );
+    }
+
+    private String normalizeName(String name) {
+        return name.trim().replaceAll("\\s+", " ");
     }
 }

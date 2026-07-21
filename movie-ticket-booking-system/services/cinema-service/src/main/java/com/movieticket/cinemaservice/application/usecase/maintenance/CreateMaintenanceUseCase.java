@@ -1,9 +1,9 @@
 package com.movieticket.cinemaservice.application.usecase.maintenance;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateHallMaintenanceRequest;
-import com.movieticket.cinemaservice.api.dto.response.HallMaintenanceResponse;
-import com.movieticket.cinemaservice.api.exception.BusinessException;
-import com.movieticket.cinemaservice.api.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.application.dto.request.CreateHallMaintenanceRequest;
+import com.movieticket.cinemaservice.application.dto.response.HallMaintenanceResponse;
+import com.movieticket.cinemaservice.application.exception.BusinessException;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
 import com.movieticket.cinemaservice.domain.aggregate.hall.Hall;
 import com.movieticket.cinemaservice.domain.aggregate.hall.HallMaintenance;
 import com.movieticket.cinemaservice.domain.enums.MaintenanceStatus;
@@ -26,8 +26,15 @@ public class CreateMaintenanceUseCase {
     @CacheEvict(value = "maintenances", allEntries = true)
 
     public HallMaintenanceResponse execute(CreateHallMaintenanceRequest request) {
-        Hall hall = hallRepository.findById(request.hallId())
+        Hall hall = hallRepository.findByIdForUpdate(request.hallId())
                 .orElseThrow(() -> new ResourceNotFoundException("Hall not found with id: " + request.hallId()));
+
+        if (!request.startTime().isBefore(request.endTime())) {
+            throw new BusinessException("Maintenance start time must be before end time");
+        }
+        if (request.startTime().isBefore(java.time.LocalDateTime.now())) {
+            throw new BusinessException("Maintenance start time must not be in the past");
+        }
 
         List<HallMaintenance> overlaps = hallMaintenanceRepository.findOverlappingMaintenances(
                 request.hallId(),

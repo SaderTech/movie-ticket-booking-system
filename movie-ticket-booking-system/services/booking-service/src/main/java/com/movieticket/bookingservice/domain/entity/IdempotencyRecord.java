@@ -4,14 +4,10 @@ import com.movieticket.bookingservice.domain.enums.IdempotencyStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class IdempotencyRecord {
@@ -23,4 +19,13 @@ public class IdempotencyRecord {
     private String responseBody;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
+
+    public void succeed(String response) {
+        status = IdempotencyStatus.SUCCEEDED;
+        responseBody = response;
+    }
+
+    public void fail() {
+        status = IdempotencyStatus.FAILED;
+    }
 }

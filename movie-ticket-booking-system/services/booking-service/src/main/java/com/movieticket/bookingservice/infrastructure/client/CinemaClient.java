@@ -4,11 +4,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import java.util.Map;
-
-@FeignClient(name = "cinema-service", path = "/api/v1/cinemas")
+@FeignClient(name = "CINEMA-SERVICE")
 public interface CinemaClient {
 
-    @GetMapping("/{id}")
-    Map<String, Object> getCinema(@PathVariable("id") Long id);
+    @GetMapping("/api/cinemas/{id}")
+    CinemaClientResponse getCinema(@PathVariable("id") Long id);
 }
