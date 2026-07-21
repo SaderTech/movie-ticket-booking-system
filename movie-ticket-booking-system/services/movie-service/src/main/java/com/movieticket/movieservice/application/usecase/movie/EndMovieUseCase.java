@@ -1,7 +1,7 @@
 package com.movieticket.movieservice.application.usecase.movie;
 
-import com.movieticket.movieservice.api.dto.response.MovieResponse;
-import com.movieticket.movieservice.application.usecase.common.MovieReferenceResolver;
+import com.movieticket.movieservice.application.dto.response.MovieResponse;
+import com.movieticket.movieservice.application.service.MovieReferenceResolver;
 import com.movieticket.movieservice.domain.aggregate.movie.Movie;
 import com.movieticket.movieservice.infrastructure.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;

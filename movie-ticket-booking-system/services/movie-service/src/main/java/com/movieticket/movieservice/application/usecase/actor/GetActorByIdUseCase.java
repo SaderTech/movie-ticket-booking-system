@@ -1,7 +1,7 @@
 package com.movieticket.movieservice.application.usecase.actor;
 
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
-import com.movieticket.movieservice.api.exception.ResourceNotFoundException;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.exception.ResourceNotFoundException;
 import com.movieticket.movieservice.domain.aggregate.actor.Actor;
 import com.movieticket.movieservice.infrastructure.repository.ActorRepository;
 import lombok.RequiredArgsConstructor;

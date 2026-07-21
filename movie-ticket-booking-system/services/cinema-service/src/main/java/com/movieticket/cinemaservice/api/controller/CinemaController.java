@@ -1,8 +1,8 @@
 package com.movieticket.cinemaservice.api.controller;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateCinemaRequest;
-import com.movieticket.cinemaservice.api.dto.request.UpdateCinemaRequest;
-import com.movieticket.cinemaservice.api.dto.response.CinemaResponse;
+import com.movieticket.cinemaservice.application.dto.request.CreateCinemaRequest;
+import com.movieticket.cinemaservice.application.dto.request.UpdateCinemaRequest;
+import com.movieticket.cinemaservice.application.dto.response.CinemaResponse;
 import com.movieticket.cinemaservice.application.usecase.cinema.CreateCinemaUseCase;
 import com.movieticket.cinemaservice.application.usecase.cinema.GetAllCinemasUseCase;
 import com.movieticket.cinemaservice.application.usecase.cinema.GetCinemaByIdUseCase;

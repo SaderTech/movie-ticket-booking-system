@@ -1,9 +1,9 @@
 package com.movieticket.cinemaservice.application.usecase.seat;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateSeatRequest;
-import com.movieticket.cinemaservice.api.dto.response.SeatResponse;
-import com.movieticket.cinemaservice.api.exception.BusinessException;
-import com.movieticket.cinemaservice.api.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.application.dto.request.CreateSeatRequest;
+import com.movieticket.cinemaservice.application.dto.response.SeatResponse;
+import com.movieticket.cinemaservice.application.exception.BusinessException;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
 import com.movieticket.cinemaservice.domain.aggregate.hall.Hall;
 import com.movieticket.cinemaservice.domain.aggregate.hall.Seat;
 import com.movieticket.cinemaservice.domain.aggregate.seattype.SeatType;
@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 @Service
 @RequiredArgsConstructor
 public class CreateSeatUseCase {
@@ -23,27 +24,38 @@ public class CreateSeatUseCase {
     private final SeatTypeRepository seatTypeRepository;
 
     @Transactional
-    @CacheEvict(value = "seats", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "seats", allEntries = true),
+            @CacheEvict(value = "halls", allEntries = true)
+    })
     public SeatResponse execute(CreateSeatRequest request) {
-        Hall hall = hallRepository.findById(request.hallId())
+        Hall hall = hallRepository.findByIdForUpdate(request.hallId())
                 .orElseThrow(() -> new ResourceNotFoundException("Hall not found with id: " + request.hallId()));
+
+        long currentSeatCount = seatRepository.countByHall_Id(request.hallId());
+        if (currentSeatCount >= hall.getCapacity()) {
+            throw new BusinessException(
+                    "Hall capacity has been reached: " + hall.getCapacity()
+            );
+        }
 
         SeatType seatType = seatTypeRepository.findById(request.seatTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Seat type not found with id: " + request.seatTypeId()));
 
+        String normalizedRow = request.rowName().trim().toUpperCase();
         if (seatRepository.existsByHall_IdAndRowNameIgnoreCaseAndSeatNumber(
                 request.hallId(),
-                request.rowName(),
+                normalizedRow,
                 request.seatNumber()
         )) {
             throw new BusinessException("Seat already exists in this hall: "
-                    + request.rowName() + request.seatNumber());
+                    + normalizedRow + request.seatNumber());
         }
 
         Seat seat = new Seat(
                 hall,
                 seatType,
-                request.rowName(),
+                normalizedRow,
                 request.seatNumber(),
                 request.status()
         );

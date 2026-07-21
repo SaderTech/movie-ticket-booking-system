@@ -1,7 +1,7 @@
 package com.movieticket.movieservice.application.usecase.director;
 
-import com.movieticket.movieservice.api.dto.request.CreateDirectorRequest;
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.dto.request.CreateDirectorRequest;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
 import com.movieticket.movieservice.domain.aggregate.director.Director;
 import com.movieticket.movieservice.infrastructure.repository.DirectorRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,10 @@ public class CreateDirectorUseCase {
     @CacheEvict(value = "directors", allEntries = true)
 
     public PersonResponse execute(CreateDirectorRequest request) {
+        String normalizedName = normalizeName(request.name());
+
         Director director = new Director(
-                request.name(),
+                normalizedName,
                 request.biography(),
                 request.birthDate()
         );
@@ -35,5 +37,9 @@ public class CreateDirectorUseCase {
                 savedDirector.getBirthDate(),
                 null
         );
+    }
+
+    private String normalizeName(String name) {
+        return name.trim().replaceAll("\\s+", " ");
     }
 }

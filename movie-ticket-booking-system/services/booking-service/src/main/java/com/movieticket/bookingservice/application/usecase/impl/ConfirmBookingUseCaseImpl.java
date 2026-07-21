@@ -13,6 +13,7 @@ import com.movieticket.bookingservice.domain.port.*;
 import com.movieticket.bookingservice.domain.vo.BookingCode;
 import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
 import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
+import com.movieticket.bookingservice.infrastructure.client.CinemaClientResponse;
 import com.movieticket.bookingservice.infrastructure.client.MovieClient;
 
 import lombok.RequiredArgsConstructor;
@@ -144,8 +145,8 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
             // Gọi CinemaService lấy thông tin rạp
             final String[] cinemaName = {null};
             try {
-                Map<String, Object> cinemaData = cinemaClient.getCinema(cinemaId);
-                cinemaName[0] = (String) cinemaData.get("name");
+                CinemaClientResponse cinemaData = cinemaClient.getCinema(cinemaId);
+                cinemaName[0] = cinemaData.name();
             } catch (Exception e) {
                 log.warn("Could not fetch cinema details: {}", e.getMessage());
             }

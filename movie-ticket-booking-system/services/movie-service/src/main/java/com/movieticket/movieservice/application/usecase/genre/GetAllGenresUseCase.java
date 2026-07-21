@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.genre;
 
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
+import com.movieticket.movieservice.application.dto.response.GenreResponse;
 import com.movieticket.movieservice.infrastructure.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;

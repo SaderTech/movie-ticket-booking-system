@@ -1,8 +1,8 @@
 package com.movieticket.movieservice.application.usecase.genre;
 
-import com.movieticket.movieservice.api.dto.request.CreateGenreRequest;
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
-import com.movieticket.movieservice.api.exception.BusinessException;
+import com.movieticket.movieservice.application.dto.request.CreateGenreRequest;
+import com.movieticket.movieservice.application.dto.response.GenreResponse;
+import com.movieticket.movieservice.application.exception.BusinessException;
 import com.movieticket.movieservice.domain.aggregate.genre.Genre;
 import com.movieticket.movieservice.infrastructure.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +20,12 @@ public class CreateGenreUseCase {
     @CacheEvict(value = "genres", allEntries = true)
 
     public GenreResponse execute(CreateGenreRequest request) {
-        if (genreRepository.existsByNameIgnoreCase(request.name())) {
-            throw new BusinessException("Genre name already exists: " + request.name());
+        String normalizedName = normalizeName(request.name());
+        if (genreRepository.existsByNameIgnoreCase(normalizedName)) {
+            throw new BusinessException("Genre name already exists: " + normalizedName);
         }
 
-        Genre genre = new Genre(request.name(), request.description());
+        Genre genre = new Genre(normalizedName, request.description());
         Genre savedGenre = genreRepository.save(genre);
 
         return new GenreResponse(
@@ -32,5 +33,9 @@ public class CreateGenreUseCase {
                 savedGenre.getName(),
                 savedGenre.getDescription()
         );
+    }
+
+    private String normalizeName(String name) {
+        return name.trim().replaceAll("\\s+", " ");
     }
 }

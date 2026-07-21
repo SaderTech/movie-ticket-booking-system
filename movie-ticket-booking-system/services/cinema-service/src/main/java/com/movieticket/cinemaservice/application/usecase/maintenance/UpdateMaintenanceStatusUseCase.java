@@ -1,8 +1,8 @@
 package com.movieticket.cinemaservice.application.usecase.maintenance;
 
-import com.movieticket.cinemaservice.api.dto.request.UpdateMaintenanceStatusRequest;
-import com.movieticket.cinemaservice.api.dto.response.HallMaintenanceResponse;
-import com.movieticket.cinemaservice.api.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.application.dto.request.UpdateMaintenanceStatusRequest;
+import com.movieticket.cinemaservice.application.dto.response.HallMaintenanceResponse;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
 import com.movieticket.cinemaservice.domain.aggregate.hall.HallMaintenance;
 import com.movieticket.cinemaservice.infrastructure.repository.HallMaintenanceRepository;
 import lombok.RequiredArgsConstructor;

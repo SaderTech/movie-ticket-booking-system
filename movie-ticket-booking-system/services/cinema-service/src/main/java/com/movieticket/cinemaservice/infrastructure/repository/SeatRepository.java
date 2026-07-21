@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
+    long countByHall_Id(Long hallId);
+
     boolean existsByHall_IdAndRowNameIgnoreCaseAndSeatNumber(Long hallId, String rowName, Integer seatNumber);
 
     Optional<Seat> findByHall_IdAndRowNameIgnoreCaseAndSeatNumber(Long hallId, String rowName, Integer seatNumber);
