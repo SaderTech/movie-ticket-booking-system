@@ -1,4 +1,4 @@
-package com.movieticket.movieservice.api;
+package com.movieticket.movieservice.api.controller;
 
 import com.movieticket.movieservice.api.dto.request.CreateDirectorRequest;
 import com.movieticket.movieservice.api.dto.request.UpdateDirectorRequest;

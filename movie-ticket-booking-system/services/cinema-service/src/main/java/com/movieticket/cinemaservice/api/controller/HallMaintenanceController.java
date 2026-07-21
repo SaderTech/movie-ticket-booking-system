@@ -1,4 +1,4 @@
-package com.movieticket.cinemaservice.api;
+package com.movieticket.cinemaservice.api.controller;
 
 import com.movieticket.cinemaservice.api.dto.request.CreateHallMaintenanceRequest;
 import com.movieticket.cinemaservice.api.dto.request.UpdateMaintenanceStatusRequest;
