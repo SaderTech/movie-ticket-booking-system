@@ -10,27 +10,31 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "movie_genres")
 @IdClass(MovieGenreId.class)
 @Getter
-@Setter
 @NoArgsConstructor
 public class MovieGenre {
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "movie_id")
+    @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "genre_id")
+    @JoinColumn(name = "genre_id", nullable = false)
     private Genre genre;
 
     public MovieGenre(Movie movie, Genre genre) {
+        if (movie == null) {
+            throw new IllegalArgumentException("Movie must not be null");
+        }
+        if (genre == null) {
+            throw new IllegalArgumentException("Genre must not be null");
+        }
         this.movie = movie;
         this.genre = genre;
     }

@@ -1,8 +1,8 @@
 package com.movieticket.cinemaservice.application.usecase.cinema;
 
-import com.movieticket.cinemaservice.api.dto.request.CreateCinemaRequest;
-import com.movieticket.cinemaservice.api.dto.response.CinemaResponse;
-import com.movieticket.cinemaservice.api.exception.BusinessException;
+import com.movieticket.cinemaservice.application.dto.request.CreateCinemaRequest;
+import com.movieticket.cinemaservice.application.dto.response.CinemaResponse;
+import com.movieticket.cinemaservice.application.exception.BusinessException;
 import com.movieticket.cinemaservice.domain.aggregate.cinema.Cinema;
 import com.movieticket.cinemaservice.infrastructure.repository.CinemaRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +19,13 @@ public class CreateCinemaUseCase {
     @Transactional
     @CacheEvict(value = "cinemas", allEntries = true)
     public CinemaResponse execute(CreateCinemaRequest request) {
-        if (cinemaRepository.existsByNameIgnoreCase(request.name())) {
-            throw new BusinessException("Cinema name already exists: " + request.name());
+        String normalizedName = request.name().trim();
+        if (cinemaRepository.existsByNameIgnoreCase(normalizedName)) {
+            throw new BusinessException("Cinema name already exists: " + normalizedName);
         }
 
         Cinema cinema = new Cinema(
-                request.name(),
+                normalizedName,
                 request.address(),
                 request.city(),
                 request.contactPhone(),

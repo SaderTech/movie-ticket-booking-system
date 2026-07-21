@@ -1,9 +1,9 @@
 package com.movieticket.movieservice.application.usecase.movie;
 
-import com.movieticket.movieservice.api.dto.request.UpdateMovieRequest;
-import com.movieticket.movieservice.api.dto.response.MovieResponse;
-import com.movieticket.movieservice.api.exception.BusinessException;
-import com.movieticket.movieservice.application.usecase.common.MovieReferenceResolver;
+import com.movieticket.movieservice.application.dto.request.UpdateMovieRequest;
+import com.movieticket.movieservice.application.dto.response.MovieResponse;
+import com.movieticket.movieservice.application.exception.BusinessException;
+import com.movieticket.movieservice.application.service.MovieReferenceResolver;
 import com.movieticket.movieservice.domain.aggregate.movie.Movie;
 import com.movieticket.movieservice.infrastructure.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,15 +23,21 @@ public class UpdateMovieUseCase {
 
     public MovieResponse execute(Long id, UpdateMovieRequest request) {
         Movie movie = movieReferenceResolver.findMovieById(id);
+        String normalizedTitle = normalizeTitle(request.title());
 
-        if (request.title() != null
-                && !movie.getTitle().equalsIgnoreCase(request.title())
-                && movieRepository.existsByTitleIgnoreCase(request.title())) {
-            throw new BusinessException("Movie title already exists: " + request.title());
+        if (movieRepository.existsByTitleIgnoreCaseAndReleaseDateAndIdNot(
+                normalizedTitle,
+                request.releaseDate(),
+                id
+        )) {
+            throw new BusinessException(
+                    "Movie already exists with title and release date: "
+                            + normalizedTitle + " - " + request.releaseDate()
+            );
         }
 
         movie.updateBasicInfo(
-                request.title(),
+                normalizedTitle,
                 request.description(),
                 request.durationMinutes(),
                 request.trailerUrl(),
@@ -45,6 +51,8 @@ public class UpdateMovieUseCase {
         movie.clearActors();
         movie.clearDirectors();
 
+        movieRepository.flush();
+
         movieReferenceResolver.attachGenres(movie, request.genreIds());
         movieReferenceResolver.attachActors(movie, request.actors());
         movieReferenceResolver.attachDirectors(movie, request.directorIds());
@@ -52,5 +60,9 @@ public class UpdateMovieUseCase {
         Movie savedMovie = movieRepository.save(movie);
 
         return MovieResponse.from(savedMovie);
+    }
+
+    private String normalizeTitle(String title) {
+        return title.trim().replaceAll("\\s+", " ");
     }
 }
