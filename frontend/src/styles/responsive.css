@@ -188,7 +188,7 @@
   .admin-page-title { align-items: stretch; flex-direction: column; }
   .movie-form-layout { grid-template-columns: 1fr; }
   .poster-admin-preview { max-width: 220px; }
-  .actor-add { grid-template-columns: 1fr; }
+  .actor-add, .reference-add { grid-template-columns: 1fr; }
   .inline-filters { flex-direction: column; }
   .inline-filters label { width: 100%; }
   .maintenance-list article { align-items: stretch; flex-direction: column; }

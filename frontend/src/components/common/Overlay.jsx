@@ -4,13 +4,15 @@ import { useEffect, useRef } from 'react'
 
 function useOverlay(open, onClose) {
   const panelRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
   useEffect(() => {
     if (!open) return undefined
     const previous = document.activeElement
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') onClose?.()
+      if (event.key === 'Escape') onCloseRef.current?.()
       if (event.key === 'Tab' && panelRef.current) {
         const focusable = panelRef.current.querySelectorAll('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')
         if (!focusable.length) return
@@ -27,7 +29,7 @@ function useOverlay(open, onClose) {
       document.removeEventListener('keydown', onKeyDown)
       previous?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
   return panelRef
 }
 
