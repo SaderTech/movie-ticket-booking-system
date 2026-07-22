@@ -18,7 +18,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/init-scripts:/docker-entrypoint-initdb.d
-    restart: always
     networks:
       - movie_network
     healthcheck:
@@ -38,7 +37,6 @@ services:
       - "5050:80"
     depends_on:
       - postgres-db
-    restart: always
     networks:
       - movie_network
 
@@ -48,7 +46,6 @@ services:
     container_name: movie_redis
     ports:
       - "6379:6379"
-    restart: always
     networks:
       - movie_network
 
@@ -96,7 +93,6 @@ services:
       - "8761:8761"
     environment:
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-    restart: always
     networks:
       - movie_network
     healthcheck:
@@ -121,7 +117,6 @@ services:
     depends_on:
       eureka-service:
         condition: service_healthy
-    restart: always
     networks:
       - movie_network
 
@@ -143,7 +138,6 @@ services:
         condition: service_healthy
       eureka-service:
         condition: service_healthy
-    restart: always
     networks:
       - movie_network
 
@@ -169,7 +163,6 @@ services:
         condition: service_healthy
       redis-cache:
         condition: service_started
-    restart: always
     networks:
       - movie_network
 
@@ -195,7 +188,6 @@ services:
         condition: service_healthy
       redis-cache:
         condition: service_started
-    restart: always
     networks:
       - movie_network
 
@@ -217,7 +209,6 @@ services:
         condition: service_healthy
       eureka-service:
         condition: service_healthy
-    restart: always
     networks:
       - movie_network
 
@@ -234,6 +225,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
       - DB_PASSWORD=${DB_PASSWORD}
+      - VNP_HASH_SECRET=${VNP_HASH_SECRET}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/booking_db
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - SPRING_DATA_REDIS_HOST=redis-cache
@@ -247,7 +239,6 @@ services:
         condition: service_started
       redis-cache:
         condition: service_started
-    restart: always
     networks:
       - movie_network
 
@@ -268,7 +259,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
-    restart: always
     networks:
       - movie_network
 

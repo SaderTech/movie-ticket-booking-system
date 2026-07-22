@@ -3,21 +3,29 @@ package com.movieticket.bookingservice.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 
 @Configuration
 public class RedissonConfig {
 
+    @Value("${spring.data.redis.host:localhost}")
+    private String redisHost;
+
+    @Value("${spring.data.redis.port:6379}")
+    private int redisPort;
+
+    @Value("${spring.data.redis.timeout:3000}")
+    private int redisTimeout;
+
     @Bean
-    @DependsOn("embeddedRedisConfig")
     public RedissonClient redissonClient() {
         Config config = new Config();
         config.useSingleServer()
-                .setAddress("redis://localhost:6379")
-                .setConnectTimeout(3000)
-                .setTimeout(3000)
+                .setAddress("redis://" + redisHost + ":" + redisPort)
+                .setConnectTimeout(redisTimeout)
+                .setTimeout(redisTimeout)
                 .setRetryAttempts(1)
                 .setRetryInterval(1000);
         return Redisson.create(config);

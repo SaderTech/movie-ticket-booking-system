@@ -33,11 +33,12 @@ public class BookingAggregate {
         return agg;
     }
 
-    public static BookingAggregate forExistingCancel(Booking booking, List<Ticket> tickets, Payment payment) {
+    public static BookingAggregate forExistingCancel(Booking booking, List<Ticket> tickets, Payment payment, SeatHold seatHold) {
         BookingAggregate agg = new BookingAggregate();
         agg.booking = booking;
         agg.tickets = tickets != null ? tickets : new ArrayList<>();
         agg.payment = payment;
+        agg.seatHold = seatHold;
         return agg;
     }
 
@@ -46,7 +47,10 @@ public class BookingAggregate {
             booking.fail("Hold expired or inactive");
             throw new IllegalStateException("Seat hold has expired or is not active");
         }
-        payment.markPaid(payment.getTransactionRef() != null ? payment.getTransactionRef() : "TXN_" + System.currentTimeMillis());
+        if (payment.getTransactionRef() == null) {
+            throw new IllegalStateException("Payment must have a transaction reference before confirming booking");
+        }
+        payment.markPaid(payment.getTransactionRef());
         booking.confirm();
         tickets = issuedTickets;
         tickets.forEach(Ticket::issue);
@@ -54,7 +58,8 @@ public class BookingAggregate {
         saga.complete();
 
         domainEvents.add(new BookingConfirmedEvent(
-                booking.getBookingCode(), booking.getUserId(), booking.getShowtimeId()));
+                booking.getBookingCode(), booking.getUserId(), booking.getShowtimeId(),
+                booking.getTotalAmount(), payment.getMethod()));
         domainEvents.add(new TicketBookedEvent(
                 booking.getBookingCode(), booking.getUserId(), booking.getShowtimeId(),
                 booking.getTotalAmount(),
@@ -63,13 +68,19 @@ public class BookingAggregate {
                         .toList()));
     }
 
-    public void compensateFailedPayment() {
-        booking.fail("Payment failed");
-        seatHold.release();
-        saga.fail("Payment failed");
+    public void compensateFailedPayment(String failureReason) {
+        String reason = failureReason != null ? failureReason : "Payment failed";
+        booking.fail(reason);
+        if (seatHold != null) {
+            seatHold.release();
+        }
+        if (saga != null) {
+            saga.startCompensation();
+            saga.compensate();
+        }
 
         domainEvents.add(new BookingCancelledEvent(
-                booking.getBookingCode(), "Payment failed: " + (payment.getFailureReason() != null ? payment.getFailureReason() : "Unknown")));
+                booking.getBookingCode(), booking.getUserId(), reason));
     }
 
     public void cancelBooking(String reason) {
@@ -77,7 +88,7 @@ public class BookingAggregate {
         if (seatHold != null) {
             seatHold.release();
         }
-        domainEvents.add(new BookingCancelledEvent(booking.getBookingCode(), reason));
+        domainEvents.add(new BookingCancelledEvent(booking.getBookingCode(), booking.getUserId(), reason));
     }
 
     public Booking getBooking() { return booking; }

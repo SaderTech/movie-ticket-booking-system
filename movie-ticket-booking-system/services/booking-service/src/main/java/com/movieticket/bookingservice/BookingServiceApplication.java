@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.movieticket.bookingservice.infrastructure.client")
+@EnableScheduling
 public class BookingServiceApplication {
 
     public static void main(String[] args) {

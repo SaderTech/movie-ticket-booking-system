@@ -66,11 +66,17 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- OpenFeign for microservice communication -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
+		<!-- OpenFeign for microservice communication -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+
+		<!-- Circuit breaker for Feign clients -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+		</dependency>
 
         <!-- Lombok for boilerplates -->
         <dependency>
