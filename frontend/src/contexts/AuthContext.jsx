@@ -1,5 +1,6 @@
 import { createContext, useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import { authApi } from '../api/authApi'
 import { clearAuthSession, getAuthSession, setAuthSession } from '../utils/authStorage'
 import { getRoles, hasAdminRole } from '../utils/jwtUtils'
@@ -21,6 +22,7 @@ export function AuthProvider({ children }) {
     clearAuthSession()
     setSession(null)
     queryClient.clear()
+    toast.success('Đăng xuất thành công')
   }, [queryClient])
 
   const value = useMemo(() => ({
