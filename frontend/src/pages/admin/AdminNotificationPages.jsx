@@ -4,27 +4,52 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { notificationApi } from '../../api/notificationApi'
 import { EmptyState, ErrorState, SkeletonGrid } from '../../components/common/AsyncState'
+import { Modal } from '../../components/common/Overlay'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { getApiError } from '../../utils/apiError'
 import { displayValue, formatDateTime } from '../../utils/formatters'
 
 const types = ['BOOKING_CONFIRMATION', 'BOOKING_CANCELLED', 'SEAT_HOLD_CREATED', 'SEAT_HOLD_EXPIRED', 'PAYMENT_SUCCESS', 'PAYMENT_FAILED', 'SHOWTIME_REMINDER', 'TICKET_CANCELLED', 'SYSTEM_ALERT']
+const emptyNotification = { recipientEmail: '', subject: '', message: '', channel: 'EMAIL', type: 'SYSTEM_ALERT' }
+const emptyTemplate = { code: '', subject: '', body: '' }
 
-function Heading({ title, description }) { return <div className="admin-page-title"><div><span className="eyebrow"><BellRing /> Notification service</span><h1>{title}</h1><p>{description}</p></div></div> }
+function Heading({ title, description, action }) {
+  return <div className="admin-page-title"><div><span className="eyebrow"><BellRing /> Notification service</span><h1>{title}</h1><p>{description}</p></div>{action}</div>
+}
 
 export function AdminNotificationsPage() {
-  const [form, setForm] = useState({ recipientEmail: '', subject: '', message: '', channel: 'EMAIL', type: 'SYSTEM_ALERT' })
+  const [formOpen, setFormOpen] = useState(false)
+  const [form, setForm] = useState({ ...emptyNotification })
   const [lastResult, setLastResult] = useState(null)
   const ping = useQuery({ queryKey: ['notification', 'ping'], queryFn: notificationApi.ping, retry: false })
-  const send = useMutation({ mutationFn: notificationApi.send, onSuccess: (data) => { setLastResult(data); toast.success(data.status === 'SENT' ? 'Thông báo đã gửi' : `Backend trả trạng thái ${data.status}`) }, onError: (error) => toast.error(getApiError(error)) })
-  return <div><Heading title="Gửi thông báo" description="Gửi qua API hiện có và hiển thị đúng trạng thái backend trả về. EMAIL là kênh được triển khai đầy đủ trong mã nguồn hiện tại." /><div className="service-status"><span className={ping.isSuccess ? 'online' : 'offline'} /> Notification service: {ping.isLoading ? 'đang kiểm tra' : ping.isSuccess ? 'kết nối được' : 'không phản hồi'}</div><div className="admin-split"><form className="panel admin-form" onSubmit={(e) => { e.preventDefault(); send.mutate(form) }}><label>Email người nhận<input required type="email" value={form.recipientEmail} onChange={(e) => setForm({ ...form, recipientEmail: e.target.value })} /></label><label>Tiêu đề<input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></label><label>Nội dung<textarea required rows="7" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></label><label>Kênh<select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}><option value="EMAIL">EMAIL — đang hỗ trợ</option><option value="SMS">SMS — backend sẽ trả trạng thái thực tế</option></select></label><label>Loại thông báo<select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{types.map((item) => <option key={item}>{item}</option>)}</select></label><p className="info-note">Mã nguồn service hiện chỉ thực hiện gửi EMAIL; SMS có thể được ghi nhận với trạng thái thất bại.</p><button className="button button-primary full" disabled={send.isPending}><Send /> {send.isPending ? 'Đang gửi...' : 'Gửi thông báo'}</button></form><section className="panel"><h2>Kết quả gần nhất</h2>{lastResult ? <div className="notification-result"><StatusBadge value={lastResult.status} /><dl><div><dt>Người nhận</dt><dd>{lastResult.recipientEmail}</dd></div><div><dt>Kênh</dt><dd>{lastResult.channel}</dd></div><div><dt>Loại</dt><dd>{lastResult.type}</dd></div><div><dt>Thời gian</dt><dd>{formatDateTime(lastResult.createdAt)}</dd></div><div><dt>Lỗi backend</dt><dd>{displayValue(lastResult.errorMessage, 'Không có')}</dd></div></dl></div> : <EmptyState title="Chưa gửi thông báo" message="Kết quả từ API sẽ hiển thị tại đây." />}</section></div></div>
+  const closeForm = () => { setFormOpen(false); setForm({ ...emptyNotification }) }
+  const send = useMutation({ mutationFn: notificationApi.send, onSuccess: (data) => { setLastResult(data); toast.success(data.status === 'SENT' ? 'Thông báo đã gửi' : `Backend trả trạng thái ${data.status}`); closeForm() }, onError: (error) => toast.error(getApiError(error)) })
+
+  return <div>
+    <Heading title="Gửi thông báo" description="Theo dõi kết quả gửi gần nhất; mở biểu mẫu khi cần soạn thông báo mới." action={<button className="button button-primary" onClick={() => setFormOpen(true)}><Send /> Soạn thông báo</button>} />
+    <div className="service-status"><span className={ping.isSuccess ? 'online' : 'offline'} /> Notification service: {ping.isLoading ? 'đang kiểm tra' : ping.isSuccess ? 'kết nối được' : 'không phản hồi'}</div>
+    <Modal open={formOpen} onClose={send.isPending ? undefined : closeForm} title="Soạn thông báo">
+      <form className="admin-form admin-modal-form" onSubmit={(event) => { event.preventDefault(); send.mutate(form) }}><label>Email người nhận<input required type="email" value={form.recipientEmail} onChange={(event) => setForm({ ...form, recipientEmail: event.target.value })} /></label><label>Tiêu đề<input required value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} /></label><label>Nội dung<textarea required rows="7" value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} /></label><label>Kênh<select value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}><option value="EMAIL">EMAIL — đang hỗ trợ</option><option value="SMS">SMS — backend sẽ trả trạng thái thực tế</option></select></label><label>Loại thông báo<select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}>{types.map((item) => <option key={item}>{item}</option>)}</select></label><p className="info-note">Mã nguồn service hiện chỉ thực hiện gửi EMAIL; SMS có thể được ghi nhận với trạng thái thất bại.</p><div className="form-actions movie-form-actions"><button type="button" className="button button-secondary" disabled={send.isPending} onClick={closeForm}>Hủy</button><button className="button button-primary" disabled={send.isPending}><Send /> {send.isPending ? 'Đang gửi...' : 'Gửi thông báo'}</button></div></form>
+    </Modal>
+    <section className="panel notification-result-panel"><div className="section-heading"><h2>Kết quả gần nhất</h2>{lastResult && <StatusBadge value={lastResult.status} />}</div>{lastResult ? <div className="notification-result"><dl><div><dt>Người nhận</dt><dd>{lastResult.recipientEmail}</dd></div><div><dt>Kênh</dt><dd>{lastResult.channel}</dd></div><div><dt>Loại</dt><dd>{lastResult.type}</dd></div><div><dt>Thời gian</dt><dd>{formatDateTime(lastResult.createdAt)}</dd></div><div><dt>Lỗi backend</dt><dd>{displayValue(lastResult.errorMessage, 'Không có')}</dd></div></dl></div> : <EmptyState title="Chưa gửi thông báo" message="Bấm “Soạn thông báo” để bắt đầu." />}</section>
+  </div>
 }
 
 export function AdminNotificationTemplatesPage() {
-  const queryClient = useQueryClient(); const [form, setForm] = useState({ code: '', subject: '', body: '' })
+  const queryClient = useQueryClient()
+  const [formOpen, setFormOpen] = useState(false)
+  const [form, setForm] = useState({ ...emptyTemplate })
   const query = useQuery({ queryKey: ['admin', 'notification-templates'], queryFn: notificationApi.templates })
-  const create = useMutation({ mutationFn: notificationApi.createTemplate, onSuccess: () => { toast.success('Đã tạo mẫu thông báo'); queryClient.invalidateQueries({ queryKey: ['admin', 'notification-templates'] }); setForm({ code: '', subject: '', body: '' }) }, onError: (error) => toast.error(getApiError(error)) })
-  return <div><Heading title="Mẫu thông báo" description="Backend chỉ hỗ trợ tạo và xem danh sách mẫu; không có chức năng sửa hoặc xóa." /><div className="admin-split"><form className="panel admin-form" onSubmit={(e) => { e.preventDefault(); create.mutate(form) }}><label>Mã mẫu<input required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></label><label>Tiêu đề<input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></label><label>Nội dung mẫu<textarea required rows="8" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></label><button className="button button-primary full" disabled={create.isPending}><Plus /> Tạo mẫu</button></form><section className="template-list">{query.isLoading ? <SkeletonGrid count={4} compact /> : query.isError ? <ErrorState message={getApiError(query.error)} /> : !(query.data || []).length ? <EmptyState title="Chưa có mẫu" /> : query.data.map((item) => <article className="panel template-card" key={item.id}><Mail /><div><span className="eyebrow">{item.code}</span><h2>{item.subject}</h2><p>{item.body}</p></div></article>)}</section></div></div>
+  const closeForm = () => { setFormOpen(false); setForm({ ...emptyTemplate }) }
+  const create = useMutation({ mutationFn: notificationApi.createTemplate, onSuccess: () => { toast.success('Đã tạo mẫu thông báo'); queryClient.invalidateQueries({ queryKey: ['admin', 'notification-templates'] }); closeForm() }, onError: (error) => toast.error(getApiError(error)) })
+
+  return <div>
+    <Heading title="Mẫu thông báo" description="Danh sách mẫu hiện có. Backend chỉ hỗ trợ tạo mới, không có chức năng sửa hoặc xóa." action={<button className="button button-primary" onClick={() => setFormOpen(true)}><Plus /> Tạo mẫu</button>} />
+    <Modal open={formOpen} onClose={create.isPending ? undefined : closeForm} title="Tạo mẫu thông báo">
+      <form className="admin-form admin-modal-form" onSubmit={(event) => { event.preventDefault(); create.mutate(form) }}><label>Mã mẫu<input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label><label>Tiêu đề<input required value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} /></label><label>Nội dung mẫu<textarea required rows="8" value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></label><div className="form-actions movie-form-actions"><button type="button" className="button button-secondary" disabled={create.isPending} onClick={closeForm}>Hủy</button><button className="button button-primary" disabled={create.isPending}><Plus /> {create.isPending ? 'Đang tạo...' : 'Tạo mẫu'}</button></div></form>
+    </Modal>
+    <section className="template-list">{query.isLoading ? <SkeletonGrid count={4} compact /> : query.isError ? <ErrorState message={getApiError(query.error)} /> : !(query.data || []).length ? <EmptyState title="Chưa có mẫu" /> : query.data.map((item) => <article className="panel template-card" key={item.id}><Mail /><div><span className="eyebrow">{item.code}</span><h2>{item.subject}</h2><p>{item.body}</p></div></article>)}</section>
+  </div>
 }
 
 export function AdminNotificationLogsPage() {
