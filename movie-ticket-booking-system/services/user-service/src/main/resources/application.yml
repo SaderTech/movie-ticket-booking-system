@@ -25,7 +25,7 @@ spring:
 # JWT CONFIG
 # =====================
 jwt:
-  secret: ${JWT_SECRET}
+  secret: myMovieTicketSecretKey12345678901234567890
   expiration: 86400000
 
 
