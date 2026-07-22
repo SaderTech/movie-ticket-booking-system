@@ -26,5 +26,6 @@ public class HoldSeatsResponse {
     @Builder
     public static class SeatHoldSeatDto {
         private String seatCode;
+        private String seatType;
     }
 }

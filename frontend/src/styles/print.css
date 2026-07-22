@@ -1,0 +1,11 @@
+@media print {
+  :root { color-scheme: light; }
+  body { background: white; color: #111827; }
+  body::before, .site-header, .site-footer, .account-header, .account-nav, .admin-sidebar, .admin-topbar, .booking-progress, .ticket-actions, .success-banner, .section-heading > .button { display: none !important; }
+  .account-page, .booking-page, .success-page { padding: 0; background: white; }
+  .account-layout, .booking-detail-grid { display: block; width: 100%; }
+  .panel, .ticket-card { break-inside: avoid; border: 1px solid #d1d5db; background: white; color: #111827; box-shadow: none; }
+  h1, h2, h3, strong { color: #111827 !important; }
+  p, span, small, dt, dd { color: #4b5563 !important; }
+  .qr-image { border: 1px solid #e5e7eb; }
+}

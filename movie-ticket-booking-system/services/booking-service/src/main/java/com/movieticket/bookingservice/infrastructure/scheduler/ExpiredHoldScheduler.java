@@ -4,17 +4,23 @@ import com.movieticket.bookingservice.domain.entity.BookingEventOutbox;
 import com.movieticket.bookingservice.domain.entity.SeatHold;
 import com.movieticket.bookingservice.domain.enums.OutboxStatus;
 import com.movieticket.bookingservice.domain.enums.SeatHoldStatus;
-import com.movieticket.bookingservice.domain.port.BookingEventOutboxRepository;
-import com.movieticket.bookingservice.domain.port.SeatHoldRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingEventOutboxRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaSeatHoldRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
@@ -22,40 +28,77 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ExpiredHoldScheduler {
 
-    private final SeatHoldRepository seatHoldRepository;
-    private final BookingEventOutboxRepository outboxRepository;
+    private final JpaSeatHoldRepository seatHoldRepository;
+    private final JpaBookingEventOutboxRepository outboxRepository;
+    private final RedissonClient redissonClient;
+
+    @Lazy
+    @Autowired
+    private ExpiredHoldScheduler self;
+
+    private static final int DEFAULT_LOCK_WAIT = 2;
+    private static final int DEFAULT_LOCK_LEASE = 10;
 
     @Scheduled(fixedRate = 60000)
-    @Transactional
     public void expireStaleHolds() {
-        List<SeatHold> expiredHolds = seatHoldRepository.findExpiredHolds(LocalDateTime.now());
+        RLock lock = redissonClient.getLock("scheduler:expired-hold");
+        if (lock == null) {
+            log.warn("Redisson lock for expired-hold scheduler is unavailable, skipping run");
+            return;
+        }
+        try {
+            if (!lock.tryLock(DEFAULT_LOCK_WAIT, DEFAULT_LOCK_LEASE, TimeUnit.SECONDS)) {
+                log.info("Expired hold processing already running on another instance, skipping");
+                return;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Lock acquisition interrupted for expired hold scheduler");
+            return;
+        }
+        try {
+            self.doExpireStaleHolds();
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                try { lock.unlock(); } catch (Exception e) { log.warn("Error releasing scheduler lock: {}", e.getMessage()); }
+            }
+        }
+    }
+
+    protected void doExpireStaleHolds() {
+        List<SeatHold> expiredHolds = seatHoldRepository.findByStatusAndExpiresAtBefore(SeatHoldStatus.ACTIVE, LocalDateTime.now());
         if (expiredHolds.isEmpty()) {
             return;
         }
 
         log.info("Expiring {} stale seat holds", expiredHolds.size());
         for (SeatHold hold : expiredHolds) {
-            hold.expire();
-            seatHoldRepository.save(hold);
-
-            String seatCodesJson = hold.getSeats().stream()
-                    .map(s -> "\"" + s.getSeatCode() + "\"")
-                    .collect(Collectors.joining(",", "[", "]"));
-
-            BookingEventOutbox outbox = BookingEventOutbox.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .aggregateType("SeatHold")
-                    .aggregateId(hold.getHoldToken())
-                    .eventType("SEAT_HOLD_EXPIRED")
-                    .topic("booking.seat-hold.expired")
-                    .payloadJson("{\"holdToken\":\"" + hold.getHoldToken()
-                            + "\",\"userId\":" + hold.getUserId()
-                            + ",\"showtimeId\":" + hold.getShowtimeId()
-                            + ",\"seatCodes\":" + seatCodesJson + "}")
-                    .status(OutboxStatus.PENDING)
-                    .retryCount(0)
-                    .build();
-            outboxRepository.save(outbox);
+            self.processExpiredHold(hold);
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void processExpiredHold(SeatHold hold) {
+        hold.expire();
+        seatHoldRepository.save(hold);
+
+        String seatCodesJson = hold.getSeats().stream()
+                .map(s -> "\"" + s.getSeatCode() + "\"")
+                .collect(Collectors.joining(",", "[", "]"));
+
+        BookingEventOutbox outbox = BookingEventOutbox.builder()
+                .eventId(UUID.randomUUID().toString())
+                .aggregateType("SeatHold")
+                .aggregateId(hold.getHoldToken())
+                .eventType("SEAT_HOLD_EXPIRED")
+                .topic("booking.seat-hold.expired")
+                .payloadJson("{\"holdToken\":\"" + hold.getHoldToken()
+                        + "\",\"userId\":" + hold.getUserId()
+                        + ",\"showtimeId\":" + hold.getShowtimeId()
+                        + ",\"seatCodes\":" + seatCodesJson + "}")
+                .status(OutboxStatus.PENDING)
+                .retryCount(0)
+                .build();
+        outboxRepository.save(outbox);
     }
 }

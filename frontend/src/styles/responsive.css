@@ -1,0 +1,219 @@
+@media (max-width: 1180px) {
+  .container { width: min(calc(100% - 2rem), var(--container)); }
+  .main-nav { margin-left: 0; }
+  .main-nav > a { padding-inline: .52rem; }
+  .cinema-picker { min-width: 160px; max-width: 185px; padding-left: .7rem; }
+  .account-name { display: none; }
+  .movie-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form-grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .horizontal-edit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 980px) {
+  :root { --header-height: 70px; }
+  .main-nav, .cinema-picker, .header-actions > .login-link, .header-actions > .account-dropdown { display: none; }
+  .header-actions { margin-left: auto; }
+  .mobile-menu { display: inline-grid; }
+  .hero { min-height: 700px; }
+  .hero-grid { grid-template-columns: 1fr 250px; }
+  .hero-copy h1 { font-size: clamp(4rem, 9vw, 6.2rem); }
+  .footer-grid { grid-template-columns: 1.4fr repeat(2, 1fr); }
+  .footer-grid > div:last-child { grid-column: 2 / -1; }
+  .schedule-movie { grid-template-columns: 1fr; }
+  .movie-detail-grid { grid-template-columns: minmax(210px, 280px) minmax(0, 1fr); gap: 2.5rem; }
+  .seat-layout, .checkout-layout { grid-template-columns: minmax(0, 1fr) 320px; }
+  .booking-detail-grid { grid-template-columns: 1fr; }
+  .admin-split { grid-template-columns: 1fr; }
+  .movie-form-layout { grid-template-columns: 1fr 210px; }
+}
+
+@media (max-width: 820px) {
+  .page-section { padding-block: 4rem; }
+  .header-inner { gap: .75rem; }
+  .buy-ticket { min-width: 42px; width: 42px; padding-inline: 0; }
+  .buy-ticket { font-size: 0; }
+  .buy-ticket svg { width: 19px; }
+  .hero { min-height: 670px; padding: 5.5rem 0 3.5rem; }
+  .hero-grid { grid-template-columns: 1fr; padding-top: 0; }
+  .hero-poster-wrap { display: none; }
+  .hero-backdrop { object-position: 65% center; }
+  .hero-overlay { background: linear-gradient(90deg, rgb(4 6 10 / .96), rgb(4 6 10 / .72)), linear-gradient(to top, #07090f, transparent 60%); }
+  .scroll-cue { display: none; }
+  .page-hero { min-height: 330px; padding-bottom: 3rem; }
+  .page-hero-inner { display: block; }
+  .page-hero-inner > .date-strip { margin-top: 1.5rem; }
+  .filter-panel, .cinema-toolbar { align-items: stretch; flex-direction: column; }
+  .filter-panel .search-field, .cinema-toolbar .search-field { width: 100%; }
+  .filter-tabs { justify-content: space-between; }
+  .cinema-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cinema-card { min-height: 270px; }
+  .showtime-group { grid-template-columns: 1fr; }
+  .movie-detail-hero { min-height: auto; }
+  .movie-detail-grid { grid-template-columns: 190px minmax(0, 1fr); gap: 1.7rem; }
+  .movie-detail-copy h1 { font-size: clamp(3rem, 8vw, 4.7rem); }
+  .cinema-detail-heading { grid-template-columns: auto 1fr; }
+  .cinema-detail-heading > div:last-child { grid-column: 2; align-items: flex-start; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-aside { min-height: 350px; padding: 2rem; }
+  .auth-story h1 { font-size: 3.5rem; }
+  .auth-form-wrap { min-height: 650px; padding: 5rem 1rem 2rem; }
+  .account-layout { grid-template-columns: 1fr; }
+  .account-nav { position: static; display: flex; overflow-x: auto; border-radius: 14px; }
+  .account-nav-label { display: none; }
+  .account-nav a { min-width: max-content; grid-template-columns: auto 1fr; }
+  .account-nav a svg:last-child { display: none; }
+  .seat-layout, .checkout-layout { grid-template-columns: 1fr; }
+  .booking-summary { position: sticky; z-index: 30; right: 0; bottom: .6rem; left: 0; top: auto; box-shadow: 0 -15px 50px rgb(0 0 0 / .42); }
+  .checkout-layout .booking-summary { position: static; }
+  .booking-heading { align-items: flex-start; flex-direction: column; }
+  .booking-context { min-width: 0; width: 100%; }
+  .success-banner { align-items: flex-start; flex-wrap: wrap; }
+  .success-actions { width: 100%; margin-left: 0; }
+  .admin-shell, .admin-shell.sidebar-collapsed { display: block; }
+  .admin-sidebar { position: fixed; z-index: 100; left: 0; width: 280px; transform: translateX(-105%); transition: transform .28s cubic-bezier(.22, 1, .36, 1); }
+  .admin-sidebar.open { transform: translateX(0); }
+  .admin-sidebar.open .admin-brand-copy, .admin-sidebar.open .admin-nav-label, .admin-sidebar.open .admin-nav-group a span, .admin-sidebar.open .admin-nav-group a svg:last-child, .admin-sidebar.open .admin-back span { display: flex; }
+  .admin-sidebar.open .admin-brand { min-height: 64px; flex-direction: row; }
+  .admin-sidebar.open .admin-nav-group a { grid-template-columns: 20px minmax(0, 1fr) 14px; place-items: initial; }
+  .admin-sidebar.open .admin-back { grid-template-columns: 20px minmax(0, 1fr); place-items: initial; }
+  .admin-collapse { display: none; }
+  .admin-mobile-close { position: absolute; z-index: 3; top: .85rem; right: -46px; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--color-border-strong); border-radius: 10px; background: #0c111a; color: white; }
+  .admin-overlay { position: fixed; z-index: 90; inset: 0; display: block; visibility: hidden; border: 0; background: rgb(2 4 8 / .72); opacity: 0; transition: opacity .25s, visibility .25s; }
+  .admin-overlay.visible { visibility: visible; opacity: 1; }
+  .admin-menu-button { display: inline-grid; }
+  .admin-content { padding: 1rem; }
+}
+
+@media (max-width: 640px) {
+  .container { width: min(calc(100% - 1.25rem), var(--container)); }
+  h1 { font-size: clamp(2.5rem, 12vw, 4rem); }
+  h2 { font-size: clamp(1.75rem, 9vw, 2.5rem); }
+  .page-section { padding-block: 3.3rem; }
+  .section-heading { align-items: flex-start; }
+  .section-heading > .text-link { display: none; }
+  .site-header .brand { font-size: 1rem; }
+  .brand-mark { width: 36px; height: 36px; }
+  .hero { min-height: 650px; }
+  .hero-copy h1 { font-size: clamp(3.55rem, 17vw, 5.3rem); }
+  .hero-copy > p { font-size: .9rem; }
+  .hero-actions .button { flex: 1 1 100%; }
+  .hero-trust { gap: .45rem .8rem; }
+  .page-hero { min-height: 310px; padding-top: calc(var(--header-height) + 3rem); }
+  .page-hero h1 { font-size: clamp(3rem, 14vw, 4.4rem); }
+  .filter-tabs { align-items: stretch; flex-direction: column; }
+  .tabs { width: 100%; overflow-x: auto; }
+  .tabs button { flex: 1 0 auto; }
+  .results-caption { flex-direction: column; gap: .15rem; }
+  .movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+  .movie-card { border-radius: 12px; }
+  .movie-card-body { padding: .72rem; }
+  .movie-card-body h3 { font-size: .88rem; }
+  .movie-genres { font-size: .66rem; }
+  .movie-meta { min-height: 34px; font-size: .62rem; }
+  .movie-meta span:nth-child(2) { display: none; }
+  .card-actions { grid-template-columns: 1fr; }
+  .card-actions .button-secondary { display: none; }
+  .poster-cta { display: none; }
+  .cinema-grid { grid-template-columns: 1fr; }
+  .cinema-card { min-height: 250px; }
+  .schedule-movie { padding: .75rem; }
+  .schedule-movie .showtime-button { min-width: calc(50% - .3rem); }
+  .showtime-buttons { gap: .5rem; }
+  .showtime-button { min-width: calc(50% - .3rem); }
+  .movie-detail-hero { padding-top: calc(var(--header-height) + 2rem); }
+  .movie-detail-grid { grid-template-columns: 1fr; }
+  .detail-poster-shell { width: min(58vw, 250px); }
+  .movie-detail-copy h1 { font-size: clamp(3rem, 15vw, 4.5rem); }
+  .movie-credits > div { grid-template-columns: 1fr; gap: .2rem; }
+  .detail-actions .button { width: 100%; }
+  .cinema-banner { min-height: 470px; padding-bottom: 3rem; }
+  .cinema-detail-heading { grid-template-columns: 1fr; }
+  .cinema-detail-heading > div:last-child { grid-column: 1; }
+  .cinema-icon.large { width: 64px; height: 64px; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .footer-grid > div:last-child { grid-column: auto; }
+  .footer-bottom { align-items: flex-start; flex-direction: column; }
+  .cta-card { align-items: stretch; flex-direction: column; }
+  .form-grid, .form-grid.two, .form-grid.four { grid-template-columns: 1fr; }
+  .full-span { grid-column: auto; }
+  .modal-backdrop { padding: .6rem; }
+  .modal-card { max-height: calc(100vh - 1.2rem); border-radius: 18px; padding: 1rem; }
+  .auth-aside { min-height: 300px; }
+  .auth-aside > small, .auth-benefits { display: none; }
+  .auth-story h1 { font-size: 3rem; }
+  .auth-form-wrap { align-items: flex-start; min-height: auto; padding-inline: .65rem; }
+  .auth-form { border-radius: 20px; padding: 1.2rem; }
+  .auth-back { right: 1rem; }
+  .account-page { padding-top: calc(var(--header-height) + 2rem); }
+  .account-header { align-items: flex-start; }
+  .account-avatar { width: 58px; height: 58px; border-radius: 18px; }
+  .account-header h1 { font-size: 1.7rem; }
+  .account-header p { font-size: .8rem; }
+  .account-nav { margin-inline: -.15rem; }
+  .booking-progress { margin-bottom: 2rem; }
+  .booking-progress > div strong { max-width: 64px; font-size: .58rem; }
+  .booking-progress > div span { width: 32px; height: 32px; }
+  .booking-progress > div::before { top: 15px; }
+  .booking-heading { gap: 1rem; }
+  .booking-heading h1 { font-size: 3rem; }
+  .seat-panel { padding: .8rem; }
+  .seat-panel-heading { align-items: flex-start; }
+  .seat-panel-heading .badge { display: none; }
+  .booking-summary { margin-inline: -.25rem; border-radius: 18px; padding: 1rem; }
+  .checkout-movie { grid-template-columns: 78px 1fr; }
+  .checkout-movie > img { width: 78px; }
+  .detail-list.compact { grid-template-columns: 1fr; gap: 0; }
+  .payment-options label { grid-template-columns: auto auto 1fr; padding: .8rem; }
+  .payment-options label > i { display: none; }
+  .success-banner { padding: 1rem; }
+  .success-ring { width: 48px; height: 48px; }
+  .success-ring svg { width: 27px; }
+  .success-banner h1 { font-size: 1.7rem; }
+  .success-actions { flex-direction: column; }
+  .success-actions .button { width: 100%; }
+  .ticket-card { grid-template-columns: 66px minmax(0, 1fr); }
+  .ticket-poster { width: 66px; }
+  .ticket-card::after, .ticket-notch { display: none; }
+  .qr-image { grid-column: 1 / -1; justify-self: center; }
+  .booking-row { grid-template-columns: auto 1fr; }
+  .booking-row > div:nth-child(3), .booking-row > svg { grid-column: 2; align-items: flex-start; }
+  .avatar-editor { align-items: flex-start; flex-direction: column; }
+  .detail-list > div { flex-direction: column; gap: .2rem; }
+  .detail-list strong { text-align: left; }
+  .metric-grid, .settings-grid { grid-template-columns: 1fr; }
+  .admin-page-title { align-items: stretch; flex-direction: column; }
+  .movie-form-layout { grid-template-columns: 1fr; }
+  .poster-admin-preview { max-width: 220px; }
+  .actor-add, .reference-add { grid-template-columns: 1fr; }
+  .inline-filters { flex-direction: column; }
+  .inline-filters label { width: 100%; }
+  .maintenance-list article { align-items: stretch; flex-direction: column; }
+  .maintenance-list select { width: 100%; }
+  .admin-user > div { display: none; }
+  .admin-breadcrumb strong { display: none; }
+  .error-visual { transform: scale(.82); }
+  .error-page h1 { font-size: 2.8rem; }
+}
+
+@media (max-width: 390px) {
+  .header-inner { gap: .4rem; }
+  .site-header .brand { font-size: .88rem; }
+  .brand-mark { width: 34px; height: 34px; }
+  .header-actions { gap: .35rem; }
+  .hero-copy h1 { font-size: 3.4rem; }
+  .movie-grid { gap: .55rem; }
+  .movie-card-body { padding: .62rem; }
+  .movie-card-body h3 { font-size: .8rem; }
+  .card-actions .button { min-height: 34px; font-size: .72rem; }
+  .showtime-button { min-width: 100%; }
+  .schedule-movie .showtime-button { min-width: 100%; }
+  .booking-progress > div strong { font-size: .52rem; }
+  .booking-context { grid-template-columns: 54px 1fr; }
+  .booking-context > img { width: 54px; }
+  .ticket-actions { flex-direction: column; }
+  .ticket-actions .button { width: 100%; }
+}

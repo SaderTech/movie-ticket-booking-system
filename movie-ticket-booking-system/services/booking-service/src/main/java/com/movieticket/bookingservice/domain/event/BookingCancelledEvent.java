@@ -6,12 +6,13 @@ import java.util.UUID;
 public record BookingCancelledEvent(
         String eventId,
         String bookingCode,
+        Long userId,
         String reason,
         LocalDateTime occurredAt
 ) implements DomainEvent {
 
-    public BookingCancelledEvent(String bookingCode, String reason) {
-        this(UUID.randomUUID().toString(), bookingCode, reason, LocalDateTime.now());
+    public BookingCancelledEvent(String bookingCode, Long userId, String reason) {
+        this(UUID.randomUUID().toString(), bookingCode, userId, reason, LocalDateTime.now());
     }
 
     @Override

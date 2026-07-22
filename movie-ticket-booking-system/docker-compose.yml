@@ -1,277 +1,535 @@
-version: '3.9'
-
 services:
-  # ========================================
-  # PHẦN 1: HẠ TẦNG CƠ SỞ (INFRASTRUCTURE)
-  # ========================================
 
-  # 1. Cơ sở dữ liệu PostgreSQL
+  # =========================================================
+  # PHẦN 1: HẠ TẦNG
+  # =========================================================
+
   postgres-db:
     image: postgres:15-alpine
     container_name: movie_postgres
+
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
-      POSTGRES_MULTIPLE_DATABASES: user_db,movie_db,cinema_db,showtime_db,booking_db
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
+
     ports:
       - "5433:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/init-scripts:/docker-entrypoint-initdb.d
-    restart: always
+      - ./infra/init-scripts:/docker-entrypoint-initdb.d:ro
+
+    restart: unless-stopped
+
     networks:
       - movie_network
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # 2. pgAdmin
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d postgres && psql -U postgres -d movie_db -tAc \"SELECT to_regclass('public.movies') IS NOT NULL\" | grep -q t && psql -U postgres -d cinema_db -tAc \"SELECT to_regclass('public.cinemas') IS NOT NULL\" | grep -q t && psql -U postgres -d booking_db -tAc \"SELECT to_regclass('public.bookings') IS NOT NULL\" | grep -q t"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: movie_pgadmin
+
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@movie.com
       PGADMIN_DEFAULT_PASSWORD: admin
+
     ports:
       - "5050:80"
+
     depends_on:
-      - postgres-db
-    restart: always
+      postgres-db:
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 3. Redis
+
   redis-cache:
     image: redis:7-alpine
     container_name: movie_redis
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
     ports:
       - "6379:6379"
-    restart: always
+
+    volumes:
+      - redis_data:/data
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 4. Zookeeper
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: movie_zookeeper
+
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+
     ports:
       - "2181:2181"
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 5. Kafka Broker
+
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: movie_kafka
+
     depends_on:
       - zookeeper
+
     ports:
-      - "9092:9092"
       - "29092:29092"
+
     environment:
       KAFKA_BROKER_ID: 1
+
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+
+      KAFKA_LISTENERS: >-
+        PLAINTEXT://0.0.0.0:9092,
+        PLAINTEXT_HOST://0.0.0.0:29092
+
+      KAFKA_ADVERTISED_LISTENERS: >-
+        PLAINTEXT://kafka:9092,
+        PLAINTEXT_HOST://localhost:29092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >-
+        PLAINTEXT:PLAINTEXT,
+        PLAINTEXT_HOST:PLAINTEXT
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 6. Zipkin
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+
+
   zipkin:
-      image: openzipkin/zipkin:latest
-      container_name: movie_zipkin
-      ports:
-        - "9411:9411"
-      networks:
-        - movie_network
+    image: openzipkin/zipkin:latest
+    container_name: movie_zipkin
 
-  # ========================================
-  # PHẦN 2: CÁC MICROSERVICES CỦA DỰ ÁN
-  # ========================================
+    ports:
+      - "9411:9411"
 
-  # 6. Eureka Server
+    restart: unless-stopped
+
+    networks:
+      - movie_network
+
+
+  # =========================================================
+  # PHẦN 2: EUREKA VÀ API GATEWAY
+  # =========================================================
+
   eureka-service:
     build:
       context: .
       dockerfile: infra/eureka-service/Dockerfile
+
     container_name: movie_eureka
+
     ports:
       - "8761:8761"
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-    restart: always
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+    restart: unless-stopped
+
     networks:
       - movie_network
+
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8761/actuator/health" ]
+      test:
+        [
+          "CMD",
+          "wget",
+          "-qO-",
+          "http://localhost:8761/actuator/health"
+        ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
       start_period: 45s
 
-  # 7. API Gateway
+
   api-gateway:
     build:
       context: .
       dockerfile: infra/api-gateway/Dockerfile
+
     container_name: movie_gateway
+
     ports:
       - "8080:8080"
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      REDIS_HOST: redis-cache
+      REDIS_PORT: 6379
+
+      SPRING_DATA_REDIS_HOST: redis-cache
+      SPRING_DATA_REDIS_PORT: 6379
+
     depends_on:
       eureka-service:
         condition: service_healthy
-    restart: always
+
+      redis-cache:
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 8. User Service
+
+  # =========================================================
+  # PHẦN 3: USER SERVICE
+  # =========================================================
+
   user-service:
     build:
       context: .
       dockerfile: services/user-service/Dockerfile
+
     container_name: movie_user
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - JWT_SECRET=${JWT_SECRET}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/user_db
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_DATASOURCE_URL: >-
+        jdbc:postgresql://postgres-db:5432/user_db
+
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      # init.sql chưa tạo bảng User nên User Service vẫn tự tạo bảng.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
     depends_on:
       postgres-db:
         condition: service_healthy
+
       eureka-service:
         condition: service_healthy
-    restart: always
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 9. Movie Service (Đã bổ sung Redis)
+
+  # =========================================================
+  # PHẦN 4: MOVIE SERVICE
+  # =========================================================
+
   movie-service:
     build:
       context: .
       dockerfile: services/movie-service/Dockerfile
+
     container_name: movie_service
+
+    ports:
+      - "8082:8082"
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/movie_db
-      - SPRING_DATA_REDIS_HOST=redis-cache
-      - SPRING_DATA_REDIS_PORT=6379
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_DATASOURCE_URL: >-
+        jdbc:postgresql://postgres-db:5432/movie_db
+
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      # Schema Movie đã được init.sql tạo.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      JPA_DDL_AUTO: validate
+      JPA_SHOW_SQL: "false"
+
+      SPRING_DATA_REDIS_HOST: redis-cache
+      SPRING_DATA_REDIS_PORT: 6379
+
     depends_on:
       postgres-db:
         condition: service_healthy
+
       eureka-service:
         condition: service_healthy
+
       redis-cache:
-        condition: service_started
-    restart: always
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 10. Cinema Service (Đã bổ sung Redis)
+
+  # =========================================================
+  # PHẦN 5: CINEMA SERVICE
+  # =========================================================
+
   cinema-service:
     build:
       context: .
       dockerfile: services/cinema-service/Dockerfile
+
     container_name: movie_cinema
+
+    ports:
+      - "8083:8083"
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/cinema_db
-      - SPRING_DATA_REDIS_HOST=redis-cache
-      - SPRING_DATA_REDIS_PORT=6379
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_DATASOURCE_URL: >-
+        jdbc:postgresql://postgres-db:5432/cinema_db
+
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      # Schema Cinema đã được init.sql tạo.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      JPA_DDL_AUTO: validate
+      JPA_SHOW_SQL: "false"
+
+      SPRING_DATA_REDIS_HOST: redis-cache
+      SPRING_DATA_REDIS_PORT: 6379
+
     depends_on:
       postgres-db:
         condition: service_healthy
+
       eureka-service:
         condition: service_healthy
+
       redis-cache:
-        condition: service_started
-    restart: always
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 11. Showtime Service
+
+  # =========================================================
+  # PHẦN 6: SHOWTIME SERVICE
+  # =========================================================
+
   showtime-service:
     build:
       context: .
       dockerfile: services/showtime-service/Dockerfile
+
     container_name: movie_showtime
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/showtime_db
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_DATASOURCE_URL: >-
+        jdbc:postgresql://postgres-db:5432/showtime_db
+
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      # init.sql chưa tạo bảng Showtime.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
     depends_on:
       postgres-db:
         condition: service_healthy
+
       eureka-service:
         condition: service_healthy
-    restart: always
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 12. Booking Service (Sửa lại chuẩn key Redis)
+
+  # =========================================================
+  # PHẦN 7: BOOKING SERVICE
+  # =========================================================
+
   booking-service:
     build:
       context: .
       dockerfile: services/booking-service/Dockerfile
+
     container_name: movie_booking
+
+    ports:
+      - "8085:8085"
+
     environment:
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/booking_db
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - SPRING_DATA_REDIS_HOST=redis-cache
-      - SPRING_DATA_REDIS_PORT=6379
-      - APP_REDIS_EMBEDDED_ENABLED=false
-      - APP_KAFKA_ENABLED=true
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_DATASOURCE_URL: >-
+        jdbc:postgresql://postgres-db:5432/booking_db
+
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      # Schema Booking đã được init.sql tạo.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      JPA_DDL_AUTO: validate
+      JPA_SHOW_SQL: "false"
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      SPRING_DATA_REDIS_HOST: redis-cache
+      SPRING_DATA_REDIS_PORT: 6379
+
+      APP_REDIS_EMBEDDED_ENABLED: "false"
+      APP_KAFKA_ENABLED: "true"
+
+      VNP_TMN_CODE: ${VNP_TMN_CODE:-TU8GEVIB}
+      VNP_HASH_SECRET: ${VNP_HASH_SECRET}
+      VNP_RETURN_URL: >-
+        http://localhost:8085/api/bookings/vnpay-return
+
+      VNP_ALLOWED_RETURN_HOSTS: localhost,127.0.0.1
+
     depends_on:
       postgres-db:
         condition: service_healthy
+
       eureka-service:
         condition: service_healthy
+
       kafka:
-        condition: service_started
+        condition: service_healthy
+
       redis-cache:
-        condition: service_started
-    restart: always
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-  # 13. Notification Service
+
+  # =========================================================
+  # PHẦN 8: NOTIFICATION SERVICE
+  # =========================================================
+
   notification-service:
     build:
       context: .
       dockerfile: services/notification-service/Dockerfile
+
     container_name: movie_notification
+
     environment:
-<<<<<<< Updated upstream
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-=======
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
 
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
@@ -283,21 +541,32 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
->>>>>>> Stashed changes
     depends_on:
       eureka-service:
         condition: service_healthy
+
       kafka:
-        condition: service_started
-    restart: always
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - movie_network
 
-# Định nghĩa mạng nội bộ
+
+# =========================================================
+# NETWORK
+# =========================================================
+
 networks:
   movie_network:
     driver: bridge
 
-# Khai báo volume
+
+# =========================================================
+# VOLUMES
+# =========================================================
+
 volumes:
   postgres_data:
+  redis_data:
