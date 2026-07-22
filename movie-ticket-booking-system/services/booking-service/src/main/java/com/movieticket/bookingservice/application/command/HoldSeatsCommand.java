@@ -13,4 +13,5 @@ public class HoldSeatsCommand {
     private final Long userId;
     private final Long showtimeId;
     private final List<String> seatCodes;
+    private final String idempotencyKey;
 }

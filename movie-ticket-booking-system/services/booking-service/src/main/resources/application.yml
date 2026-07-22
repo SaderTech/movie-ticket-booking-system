@@ -52,6 +52,8 @@ spring:
 
   cloud:
     openfeign:
+      circuitbreaker:
+        enabled: true
       client:
         config:
           default:
@@ -76,13 +78,16 @@ app:
     embedded:
       enabled: ${APP_REDIS_EMBEDDED_ENABLED:false}
   kafka:
-    enabled: ${APP_KAFKA_ENABLED:false}
+    enabled: ${APP_KAFKA_ENABLED:true}
+    outbox:
+      poll-interval: 5000
 
 vnpay:
-  tmn-code: TU8GEVIB
-  hash-secret: LENI87G7NEE3466DIWN9M0AXDXDV1PN5
+  tmn-code: ${VNP_TMN_CODE:TU8GEVIB}
+  hash-secret: ${VNP_HASH_SECRET}
   url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: http://localhost:8085/api/bookings/vnpay-return
+  allowed-return-hosts: localhost,127.0.0.1
 
 logging:
   level:

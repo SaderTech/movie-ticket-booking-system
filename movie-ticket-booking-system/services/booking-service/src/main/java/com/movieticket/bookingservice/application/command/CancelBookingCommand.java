@@ -11,4 +11,5 @@ public class CancelBookingCommand {
     private final Long userId;
     private final String bookingCode;
     private final String reason;
+    private final String idempotencyKey;
 }

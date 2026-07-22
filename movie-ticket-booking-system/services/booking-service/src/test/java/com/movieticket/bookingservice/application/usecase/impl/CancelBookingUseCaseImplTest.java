@@ -5,7 +5,9 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.application.command.CancelBookingCommand;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
-import com.movieticket.bookingservice.domain.port.*;
+import com.movieticket.bookingservice.infrastructure.jpa.*;
+import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,10 +26,13 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CancelBookingUseCaseImplTest {
 
-    @Mock private BookingRepository bookingRepository;
-    @Mock private TicketRepository ticketRepository;
-    @Mock private PaymentRepository paymentRepository;
-    @Mock private BookingEventOutboxRepository outboxRepository;
+    @Mock private JpaBookingRepository bookingRepository;
+    @Mock private JpaTicketRepository ticketRepository;
+    @Mock private JpaPaymentRepository paymentRepository;
+    @Mock private JpaSeatHoldRepository seatHoldRepository;
+    @Mock private JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    @Mock private ObjectMapper objectMapper;
+    @Mock private DomainEventPublisherImpl domainEventPublisher;
 
     @InjectMocks
     private CancelBookingUseCaseImpl useCase;
@@ -74,7 +79,7 @@ class CancelBookingUseCaseImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(ticketRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(outboxRepository.save(any(BookingEventOutbox.class))).thenReturn(null);
+        doNothing().when(domainEventPublisher).publishAll(anyList());
 
         CancelBookingCommand cmd = CancelBookingCommand.builder()
                 .bookingCode("BK_ACTIVE").userId(1L).reason("Changed mind").build();
@@ -100,7 +105,7 @@ class CancelBookingUseCaseImplTest {
         when(ticketRepository.findByBookingId(2L)).thenReturn(List.of());
         when(paymentRepository.findByBookingId(2L)).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(outboxRepository.save(any(BookingEventOutbox.class))).thenReturn(null);
+        doNothing().when(domainEventPublisher).publishAll(anyList());
 
         CancelBookingCommand cmd = CancelBookingCommand.builder()
                 .bookingCode("BK_NOREASON").userId(1L).build();

@@ -17,8 +17,8 @@ spring:
     bootstrap-servers: localhost:19092
 
 vnpay:
-  tmn-code: TU8GEVIB
-  hash-secret: LENI87G7NEE3466DIWN9M0AXDXDV1PN5
+  tmn-code: ${VNP_TMN_CODE:TEST_TMN_CODE}
+  hash-secret: ${VNP_HASH_SECRET:TEST_HASH_SECRET}
   url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: http://localhost:8085/api/bookings/vnpay-return
 
