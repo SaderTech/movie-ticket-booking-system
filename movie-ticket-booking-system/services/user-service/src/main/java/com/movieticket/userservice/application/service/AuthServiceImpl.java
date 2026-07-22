@@ -10,13 +10,16 @@ import com.movieticket.userservice.application.security.JwtService;
 import com.movieticket.userservice.application.security.RefreshTokenService;
 
 import com.movieticket.userservice.domain.entity.RefreshToken;
+import com.movieticket.userservice.domain.entity.Role;
+import com.movieticket.userservice.domain.entity.UserRole;
+import com.movieticket.userservice.domain.repository.RoleRepository;
+import com.movieticket.userservice.domain.repository.UserRoleRepository;
 
 import com.movieticket.userservice.exception.BadRequestException;
 import com.movieticket.userservice.exception.ResourceNotFoundException;
 
 import com.movieticket.userservice.infrastructure.persistence.entity.UserJpaEntity;
 import com.movieticket.userservice.infrastructure.persistence.repository.JpaUserRepository;
-import com.movieticket.userservice.infrastructure.persistence.repository.JpaUserRoleRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,16 +31,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
-
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
 
-
     private final JpaUserRepository userRepository;
 
-    private final JpaUserRoleRepository userRoleRepository;
+
+    private final UserRoleRepository userRoleRepository;
+
+
+    private final RoleRepository roleRepository;
 
 
     private final PasswordEncoder passwordEncoder;
@@ -126,7 +131,34 @@ public class AuthServiceImpl implements AuthService {
 
 
 
+        // SAVE USER
         userRepository.save(user);
+
+
+
+        // =====================================================
+        // ASSIGN DEFAULT ROLE USER
+        // =====================================================
+
+        Role defaultRole =
+                roleRepository.findByRoleName("USER")
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException(
+                                        "USER role not found"
+                                )
+                        );
+
+
+        UserRole userRole =
+                UserRole.create(
+                        user.getId(),
+                        defaultRole.getId()
+                );
+
+
+        userRoleRepository.save(
+                userRole
+        );
 
 
 
@@ -201,11 +233,6 @@ public class AuthServiceImpl implements AuthService {
 
 
 
-        // ============================
-        // CREATE ACCESS TOKEN
-        // ============================
-
-
         String accessToken =
 
                 jwtService.generateToken(
@@ -220,11 +247,6 @@ public class AuthServiceImpl implements AuthService {
 
 
 
-        // ============================
-        // CREATE REFRESH TOKEN
-        // ============================
-
-
         String refreshToken =
 
                 refreshTokenService
@@ -234,8 +256,6 @@ public class AuthServiceImpl implements AuthService {
                         )
 
                         .getToken();
-
-
 
 
 
@@ -317,7 +337,6 @@ public class AuthServiceImpl implements AuthService {
 
 
 
-
         String newAccessToken =
 
 
@@ -328,7 +347,6 @@ public class AuthServiceImpl implements AuthService {
                         getRoleNames(user.getId())
 
                 );
-
 
 
 
@@ -365,10 +383,16 @@ public class AuthServiceImpl implements AuthService {
 
     }
 
-    private List<String> getRoleNames(Long userId) {
-        List<String> roles = userRoleRepository.findRoleNamesByUserId(userId);
-        return roles.isEmpty() ? List.of("USER") : roles;
-    }
 
+
+    private List<String> getRoleNames(Long userId) {
+
+        List<String> roles =
+                userRoleRepository.findRoleNamesByUserId(userId);
+
+        return roles.isEmpty()
+                ? List.of("USER")
+                : roles;
+    }
 
 }

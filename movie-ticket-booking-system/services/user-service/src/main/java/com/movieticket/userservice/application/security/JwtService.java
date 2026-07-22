@@ -151,6 +151,12 @@ public class JwtService {
     private SecretKey signingKey() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtConfig.getSecret()));
     }
+    public List<String> extractRoles(String token) {
+
+        return getClaims(token)
+                .get("roles", List.class);
+    }
+
 
 
 }

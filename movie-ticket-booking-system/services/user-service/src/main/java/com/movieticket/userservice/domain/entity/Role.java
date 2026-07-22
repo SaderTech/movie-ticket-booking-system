@@ -30,4 +30,12 @@ public class Role {
 
         return role;
     }
+
+    public void changeRoleName(String roleName) {
+
+        Objects.requireNonNull(roleName);
+
+        this.roleName = roleName.trim().toUpperCase();
+
+    }
 }
