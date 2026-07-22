@@ -124,9 +124,13 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIGRldmVsb3BtZW50IHB1cnBvc2VzIG9ubHkgZG8gbm90IHVzZSBpbiBwcm9kdWN0aW9u
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
     depends_on:
       eureka-service:
         condition: service_healthy
+      redis-cache:
+        condition: service_started
     networks:
       - movie_network
 
