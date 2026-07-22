@@ -32,6 +32,47 @@ public class NotificationLog {
     private LocalDateTime sentAt;
     private LocalDateTime updatedAt;
 
+
+    public static NotificationLog restore(
+            UUID id,
+            String recipientEmail,
+            String subject,
+            String message,
+            DeliveryChannel channel,
+            NotificationType type,
+            NotificationStatus status,
+            String errorMessage,
+            String sourceEventId,
+            String sourceTopic,
+            int retryCount,
+            int maxRetries,
+            LocalDateTime nextRetryAt,
+            LocalDateTime scheduledAt,
+            LocalDateTime createdAt,
+            LocalDateTime sentAt,
+            LocalDateTime updatedAt
+    ) {
+        NotificationLog log = new NotificationLog();
+        log.id = id;
+        log.recipientEmail = recipientEmail;
+        log.subject = subject;
+        log.message = message;
+        log.channel = channel;
+        log.type = type;
+        log.status = status;
+        log.errorMessage = errorMessage;
+        log.sourceEventId = sourceEventId;
+        log.sourceTopic = sourceTopic;
+        log.retryCount = retryCount;
+        log.maxRetries = maxRetries;
+        log.nextRetryAt = nextRetryAt;
+        log.scheduledAt = scheduledAt;
+        log.createdAt = createdAt;
+        log.sentAt = sentAt;
+        log.updatedAt = updatedAt;
+        return log;
+    }
+
     public static NotificationLog create(
             String recipientEmail,
             String subject,
@@ -75,6 +116,7 @@ public class NotificationLog {
 
         return log;
     }
+
 
     public static NotificationLog create(
             String recipientEmail,

@@ -15,6 +15,16 @@ public class Template {
     private String subject;
     private String body;
 
+
+    public static Template restore(UUID id, String code, String subject, String body) {
+        Template template = new Template();
+        template.id = id;
+        template.code = code;
+        template.subject = subject;
+        template.body = body;
+        return template;
+    }
+
     public static Template create(String code, String subject, String body) {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Template code is required");

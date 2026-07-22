@@ -8,6 +8,7 @@ public enum NotificationType {
     PAYMENT_SUCCESS,
     PAYMENT_FAILED,
     SHOWTIME_REMINDER,
+    TICKET_BOOKED,
     TICKET_CANCELLED,
     SYSTEM_ALERT
 }

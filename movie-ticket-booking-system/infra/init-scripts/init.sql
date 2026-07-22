@@ -9,6 +9,7 @@
 -- 2. Tạo bảng và dữ liệu mẫu cho Movie Service
 -- 3. Tạo bảng và dữ liệu mẫu cho Cinema Service
 -- 4. Tạo bảng và dữ liệu mẫu cho Booking Service
+-- 5. Tạo bảng và dữ liệu mẫu cho Notification Service
 --
 -- File chỉ tự chạy khi PostgreSQL Docker Volume còn trống.
 -- ============================================================
@@ -58,6 +59,14 @@ SELECT 'CREATE DATABASE booking_db'
     SELECT 1
     FROM pg_database
     WHERE datname = 'booking_db'
+)
+    \gexec
+
+SELECT 'CREATE DATABASE notification_db'
+    WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_database
+    WHERE datname = 'notification_db'
 )
     \gexec
 
@@ -1069,13 +1078,13 @@ FROM
     (
         SELECT
             'A'::VARCHAR AS row_name,
-            generate_series(1, 10) AS seat_number
+                generate_series(1, 10) AS seat_number
 
         UNION ALL
 
         SELECT
             'B'::VARCHAR AS row_name,
-            generate_series(1, 10) AS seat_number
+                generate_series(1, 10) AS seat_number
     ) AS generated_seats;
 
 
@@ -1115,13 +1124,13 @@ FROM
     (
         SELECT
             'C'::VARCHAR AS row_name,
-            generate_series(1, 6) AS seat_number
+                generate_series(1, 6) AS seat_number
 
         UNION ALL
 
         SELECT
             'D'::VARCHAR AS row_name,
-            generate_series(1, 6) AS seat_number
+                generate_series(1, 6) AS seat_number
     ) AS generated_seats;
 
 
@@ -1156,13 +1165,13 @@ FROM
     (
         SELECT
             'E'::VARCHAR AS row_name,
-            generate_series(1, 8) AS seat_number
+                generate_series(1, 8) AS seat_number
 
         UNION ALL
 
         SELECT
             'F'::VARCHAR AS row_name,
-            generate_series(1, 8) AS seat_number
+                generate_series(1, 8) AS seat_number
     ) AS generated_seats;
 
 
@@ -1202,13 +1211,13 @@ FROM
     (
         SELECT
             'A'::VARCHAR AS row_name,
-            generate_series(1, 10) AS seat_number
+                generate_series(1, 10) AS seat_number
 
         UNION ALL
 
         SELECT
             'B'::VARCHAR AS row_name,
-            generate_series(1, 10) AS seat_number
+                generate_series(1, 10) AS seat_number
     ) AS generated_seats;
 
 
@@ -1248,13 +1257,13 @@ FROM
     (
         SELECT
             'G'::VARCHAR AS row_name,
-            generate_series(1, 6) AS seat_number
+                generate_series(1, 6) AS seat_number
 
         UNION ALL
 
         SELECT
             'H'::VARCHAR AS row_name,
-            generate_series(1, 6) AS seat_number
+                generate_series(1, 6) AS seat_number
     ) AS generated_seats;
 
 
@@ -2447,12 +2456,179 @@ FROM public.idempotency_records
 ORDER BY table_name;
 
 
+
 -- ============================================================
--- PHẦN 8: KẾT THÚC
+-- PHẦN 8: NOTIFICATION DATABASE
+-- ============================================================
+
+\connect notification_db
+
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = ON;
+SET search_path TO public;
+
+
+-- ============================================================
+-- 8.1. TẠO BẢNG NOTIFICATION_LOGS
+-- ============================================================
+
+CREATE TABLE public.notification_logs
+(
+    id              UUID NOT NULL,
+    recipient_email VARCHAR(320) NOT NULL,
+    subject         VARCHAR(500) NOT NULL,
+    message         TEXT NOT NULL,
+    channel         VARCHAR(30) NOT NULL,
+    type            VARCHAR(50) NOT NULL,
+    status          VARCHAR(30) NOT NULL,
+    error_message   TEXT,
+    source_event_id VARCHAR(255),
+    source_topic    VARCHAR(255),
+    retry_count     INTEGER NOT NULL DEFAULT 0,
+    max_retries     INTEGER NOT NULL DEFAULT 3,
+    next_retry_at   TIMESTAMP(6) WITHOUT TIME ZONE,
+    scheduled_at    TIMESTAMP(6) WITHOUT TIME ZONE,
+    created_at      TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL,
+    sent_at         TIMESTAMP(6) WITHOUT TIME ZONE,
+    updated_at      TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL,
+
+    CONSTRAINT notification_logs_pkey
+        PRIMARY KEY (id),
+
+    CONSTRAINT uk_notification_logs_source_event_topic
+        UNIQUE (source_event_id, source_topic),
+
+    CONSTRAINT notification_logs_channel_check
+        CHECK (channel IN ('EMAIL', 'SMS', 'PUSH')),
+
+    CONSTRAINT notification_logs_type_check
+        CHECK (type IN (
+                        'BOOKING_CONFIRMATION',
+                        'BOOKING_CANCELLED',
+                        'SEAT_HOLD_CREATED',
+                        'SEAT_HOLD_EXPIRED',
+                        'PAYMENT_SUCCESS',
+                        'PAYMENT_FAILED',
+                        'SHOWTIME_REMINDER',
+                        'TICKET_BOOKED',
+                        'TICKET_CANCELLED',
+                        'SYSTEM_ALERT'
+            )),
+
+    CONSTRAINT notification_logs_status_check
+        CHECK (status IN ('PENDING', 'SENT', 'FAILED', 'RETRYING')),
+
+    CONSTRAINT notification_logs_retry_count_check
+        CHECK (retry_count >= 0),
+
+    CONSTRAINT notification_logs_max_retries_check
+        CHECK (max_retries >= 0)
+);
+
+CREATE INDEX idx_notification_logs_status_created_at
+    ON public.notification_logs (status, created_at DESC);
+
+CREATE INDEX idx_notification_logs_recipient_email
+    ON public.notification_logs (recipient_email);
+
+CREATE INDEX idx_notification_logs_due_retry
+    ON public.notification_logs (status, next_retry_at)
+    WHERE status = 'RETRYING';
+
+CREATE INDEX idx_notification_logs_due_scheduled
+    ON public.notification_logs (status, scheduled_at)
+    WHERE status = 'PENDING';
+
+
+-- ============================================================
+-- 8.2. TẠO BẢNG NOTIFICATION_TEMPLATES
+-- ============================================================
+
+CREATE TABLE public.notification_templates
+(
+    id      UUID NOT NULL,
+    code    VARCHAR(100) NOT NULL,
+    subject VARCHAR(500) NOT NULL,
+    body    TEXT NOT NULL,
+
+    CONSTRAINT notification_templates_pkey
+        PRIMARY KEY (id),
+
+    CONSTRAINT uk_notification_templates_code
+        UNIQUE (code)
+);
+
+
+-- ============================================================
+-- 8.3. DỮ LIỆU MẪU NOTIFICATION_TEMPLATES
+-- ============================================================
+
+INSERT INTO public.notification_templates (id, code, subject, body)
+VALUES
+    (
+        '00000000-0000-0000-0000-000000000101',
+        'BOOKING_CONFIRMATION',
+        'Xác nhận đặt vé thành công - {{bookingCode}}',
+        'Xin chào {{customerName}}, booking {{bookingCode}} của bạn đã được xác nhận.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000102',
+        'SHOWTIME_REMINDER',
+        'Nhắc lịch xem phim - {{bookingCode}}',
+        'Xin chào {{customerName}}, suất chiếu {{bookingCode}} của bạn sắp bắt đầu.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000103',
+        'TICKET_BOOKED',
+        'Vé xem phim đã sẵn sàng - {{bookingCode}}',
+        'Xin chào {{customerName}}, vé của booking {{bookingCode}} đã được phát hành.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000104',
+        'BOOKING_CANCELLED',
+        'Thông báo hủy vé - {{bookingCode}}',
+        'Xin chào {{customerName}}, booking {{bookingCode}} của bạn đã được hủy.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000105',
+        'PAYMENT_SUCCESS',
+        'Thanh toán thành công - {{paymentCode}}',
+        'Thanh toán {{paymentCode}} đã hoàn tất thành công.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000106',
+        'PAYMENT_FAILED',
+        'Thanh toán thất bại - {{paymentCode}}',
+        'Thanh toán {{paymentCode}} chưa thành công. Vui lòng thử lại.'
+    )
+    ON CONFLICT (code) DO NOTHING;
+
+
+-- ============================================================
+-- PHẦN 9: KIỂM TRA KẾT QUẢ NOTIFICATION
+-- ============================================================
+
+SELECT
+    'notification_logs' AS table_name,
+    COUNT(*) AS row_count
+FROM public.notification_logs
+
+UNION ALL
+
+SELECT
+    'notification_templates',
+    COUNT(*)
+FROM public.notification_templates
+
+ORDER BY table_name;
+
+
+-- ============================================================
+-- PHẦN 10: KẾT THÚC
 -- ============================================================
 
 \connect postgres
 
 SELECT
-    'Initialization completed successfully: Movie, Cinema and Booking schemas with demo data were created.'
+    'Initialization completed successfully: Movie, Cinema, Booking and Notification schemas with demo data were created.'
         AS initialization_result;

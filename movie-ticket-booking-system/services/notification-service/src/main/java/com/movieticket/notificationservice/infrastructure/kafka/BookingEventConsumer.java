@@ -32,6 +32,7 @@ public class BookingEventConsumer {
             topics = {
                     Constants.TOPIC_BOOKING_CONFIRMED,
                     Constants.TOPIC_BOOKING_CANCELLED,
+                    Constants.TOPIC_TICKET_BOOKED,
                     Constants.TOPIC_SEAT_HOLD_CREATED,
                     Constants.TOPIC_SEAT_HOLD_EXPIRED
             },
@@ -44,6 +45,7 @@ public class BookingEventConsumer {
             switch (topic) {
                 case Constants.TOPIC_BOOKING_CONFIRMED -> handleBookingConfirmed(payload, topic, message);
                 case Constants.TOPIC_BOOKING_CANCELLED -> handleBookingCancelled(payload, topic, message);
+                case Constants.TOPIC_TICKET_BOOKED -> handleTicketBooked(payload, topic, message);
                 case Constants.TOPIC_SEAT_HOLD_CREATED -> handleSeatHoldCreated(payload, topic, message);
                 case Constants.TOPIC_SEAT_HOLD_EXPIRED -> handleSeatHoldExpired(payload, topic, message);
                 default -> log.debug("Ignored booking event from topic={}", topic);
@@ -104,6 +106,33 @@ public class BookingEventConsumer {
                 message,
                 "EMAIL",
                 "BOOKING_CANCELLED",
+                sourceEventId,
+                topic,
+                null
+        ));
+    }
+
+    private void handleTicketBooked(JsonNode payload, String topic, String rawMessage) {
+        String recipientEmail = recipientResolver.resolveEmail(payload);
+        String customerName = recipientResolver.resolveCustomerName(payload);
+        String bookingCode = text(payload, "bookingCode", "unknown-booking");
+        String sourceEventId = sourceEventId(payload, rawMessage, bookingCode, "ticket-booked");
+
+        String ticketSummary = buildTicketSummary(payload);
+        String qrEndpoint = "/api/v1/qr-codes/ticket/" + bookingCode;
+
+        String message = "Xin chào " + customerName + ",\n\n"
+                + "Vé của booking " + bookingCode + " đã được phát hành.\n"
+                + ticketSummary
+                + "QR vé: " + qrEndpoint + "\n\n"
+                + "Vui lòng đưa mã QR hoặc mã vé cho nhân viên rạp khi check-in.";
+
+        sendNotificationUseCase.execute(new SendNotificationCommand(
+                recipientEmail,
+                "Vé xem phim đã sẵn sàng - " + bookingCode,
+                message,
+                "EMAIL",
+                "TICKET_BOOKED",
                 sourceEventId,
                 topic,
                 null
@@ -189,6 +218,21 @@ public class BookingEventConsumer {
                 Constants.TOPIC_SHOWTIME_REMINDER,
                 reminderAt.get()
         ));
+    }
+
+    private String buildTicketSummary(JsonNode payload) {
+        JsonNode tickets = payload.path("tickets");
+        if (!tickets.isArray() || tickets.size() == 0) {
+            return "Danh sách vé: chưa có thông tin chi tiết.\n";
+        }
+
+        StringBuilder builder = new StringBuilder("Danh sách vé:\n");
+        tickets.forEach(ticket -> {
+            String ticketCode = text(ticket, "ticketCode", "unknown-ticket");
+            String seatCode = text(ticket, "seatCode", "unknown-seat");
+            builder.append("- ").append(ticketCode).append(" / Ghế ").append(seatCode).append("\n");
+        });
+        return builder.toString();
     }
 
     private String text(JsonNode payload, String field, String defaultValue) {

@@ -539,9 +539,18 @@ services:
         http://zipkin:9411/api/v2/spans
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_URL: >-
+        jdbc:postgresql://postgres-db:5432/notification_db
+
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
+      postgres-db:
+        condition: service_healthy
       eureka-service:
         condition: service_healthy
 

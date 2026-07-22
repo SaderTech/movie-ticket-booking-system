@@ -10,6 +10,9 @@ public final class ApiPath {
 
     public static final String SEND = "/send";
     public static final String LOGS = "/logs";
+    public static final String LOG_SEARCH = "/logs/search";
+    public static final String DETAIL = "/{id}";
+    public static final String RESEND = "/{id}/resend";
     public static final String TICKET = "/ticket/{ticketCode}";
 
     private ApiPath() {
