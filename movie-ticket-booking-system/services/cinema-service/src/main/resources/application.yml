@@ -6,7 +6,7 @@ spring:
     name: CINEMA-SERVICE
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cinema_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/cinema_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${DB_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
