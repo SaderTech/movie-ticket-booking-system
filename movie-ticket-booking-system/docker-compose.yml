@@ -266,10 +266,24 @@ services:
       dockerfile: services/notification-service/Dockerfile
     container_name: movie_notification
     environment:
+<<<<<<< Updated upstream
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+=======
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: >-
+        http://eureka-service:8761/eureka/
+
+      ZIPKIN_ENDPOINT: >-
+        http://zipkin:9411/api/v2/spans
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+>>>>>>> Stashed changes
     depends_on:
       eureka-service:
         condition: service_healthy
