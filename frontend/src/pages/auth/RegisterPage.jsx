@@ -1,0 +1,22 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { ArrowLeft, Clapperboard, Eye, EyeOff, ShieldCheck, Ticket, UserPlus } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
+import { Link, useNavigate } from 'react-router-dom'
+import { z } from 'zod'
+import { authApi } from '../../api/authApi'
+import { getApiError } from '../../utils/apiError'
+import { LoadingSpinner } from '../../components/common/DesignSystem'
+
+const phonePattern = /^(0|\+84)[0-9]{9}$/
+const schema = z.object({ username: z.string().min(3, 'Tên đăng nhập tối thiểu 3 ký tự').max(30), email: z.string().email('Email không hợp lệ'), fullName: z.string().min(1, 'Vui lòng nhập họ tên').max(100), phone: z.string().regex(phonePattern, 'Số điện thoại Việt Nam không hợp lệ'), password: z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự').max(50), confirmPassword: z.string() }).refine((data) => data.password === data.confirmPassword, { message: 'Mật khẩu xác nhận không khớp', path: ['confirmPassword'] })
+
+export function RegisterPage() {
+  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema) })
+  const onSubmit = async ({ confirmPassword, ...values }) => { try { await authApi.register(values); toast.success('Đăng ký thành công. Vui lòng đăng nhập.'); navigate('/login', { replace: true }) } catch (error) { toast.error(getApiError(error, 'Đăng ký thất bại.')) } }
+  return <div className="auth-page"><section className="auth-aside"><div className="auth-beams" /><Link className="brand" to="/"><span className="brand-mark"><Clapperboard /></span> MovieTicket</Link><div className="auth-story"><span className="eyebrow">Thành viên mới</span><h1>Mở màn trải nghiệm điện ảnh của riêng bạn.</h1><p>Tạo tài khoản để chọn ghế, thanh toán và giữ mọi tấm vé trong một nơi.</p><div className="auth-benefits"><span><Ticket /> Vé điện tử tiện lợi</span><span><ShieldCheck /> Phiên đăng nhập an toàn</span></div></div><small>MovieTicket · Mỗi suất chiếu, một thế giới mới.</small></section><section className="auth-form-wrap"><Link className="auth-back" to="/"><ArrowLeft /> Về trang chủ</Link><form className="auth-form register-form" onSubmit={handleSubmit(onSubmit)} noValidate><div className="auth-form-title"><span className="eyebrow">Tạo tài khoản</span><h1>Gia nhập MovieTicket</h1><p>Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p></div><div className="form-grid two"><label>Tên đăng nhập<input autoComplete="username" {...register('username')} />{errors.username && <small className="field-error">{errors.username.message}</small>}</label><label>Họ và tên<input autoComplete="name" {...register('fullName')} />{errors.fullName && <small className="field-error">{errors.fullName.message}</small>}</label><label>Email<input type="email" autoComplete="email" {...register('email')} />{errors.email && <small className="field-error">{errors.email.message}</small>}</label><label>Số điện thoại<input autoComplete="tel" placeholder="0912345678" {...register('phone')} />{errors.phone && <small className="field-error">{errors.phone.message}</small>}</label><label>Mật khẩu<div className="password-field"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" {...register('password')} /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>{showPassword ? <EyeOff /> : <Eye />}</button></div>{errors.password && <small className="field-error">{errors.password.message}</small>}</label><label>Xác nhận mật khẩu<div className="password-field"><input type={showConfirm ? 'text' : 'password'} autoComplete="new-password" {...register('confirmPassword')} /><button type="button" onClick={() => setShowConfirm(!showConfirm)} aria-label={showConfirm ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'}>{showConfirm ? <EyeOff /> : <Eye />}</button></div>{errors.confirmPassword && <small className="field-error">{errors.confirmPassword.message}</small>}</label></div><button className="button button-primary button-lg full" disabled={isSubmitting}>{isSubmitting ? <><LoadingSpinner /> Đang tạo tài khoản…</> : <><UserPlus /> Tạo tài khoản</>}</button></form></section></div>
+}
