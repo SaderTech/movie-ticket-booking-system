@@ -9,26 +9,33 @@ public class UserRoleMapper {
     }
 
     public static UserRoleJpaEntity toJpa(
-            UserRole role
+            UserRole userRole
     ) {
 
-        UserRoleJpaEntity entity =
-                new UserRoleJpaEntity();
+        if (userRole == null) {
+            return null;
+        }
 
-        entity.setUserId(role.getUserId());
-        entity.setRoleId(role.getRoleId().intValue());
+        UserRoleJpaEntity entity = new UserRoleJpaEntity();
+
+        entity.setUserId(userRole.getUserId());
+        entity.setRoleId(userRole.getRoleId());
 
         return entity;
     }
+
 
     public static UserRole toDomain(
             UserRoleJpaEntity entity
     ) {
 
+        if (entity == null) {
+            return null;
+        }
+
         return UserRole.create(
                 entity.getUserId(),
-                entity.getRoleId().longValue()
+                entity.getRoleId()
         );
     }
-
 }

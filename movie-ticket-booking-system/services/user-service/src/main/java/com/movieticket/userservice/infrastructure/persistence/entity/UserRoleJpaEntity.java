@@ -19,14 +19,14 @@ public class UserRoleJpaEntity {
 
     @Id
     @Column(name = "role_id")
-    private Integer roleId;
+    private Long roleId;
 
     @Getter
     @Setter
     public static class UserRoleId implements Serializable {
 
         private Long userId;
-        private Integer roleId;
+        private Long roleId;
 
         public UserRoleId() {
         }

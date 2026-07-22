@@ -12,12 +12,13 @@ public class RoleMapper {
 
     public static RoleJpaEntity toJpa(Role role) {
 
-        RoleJpaEntity entity = new RoleJpaEntity();
-
-        if (role.getId() != null) {
-            entity.setId(role.getId().intValue());
+        if (role == null) {
+            return null;
         }
 
+        RoleJpaEntity entity = new RoleJpaEntity();
+
+        entity.setId(role.getId());
         entity.setRoleName(role.getRoleName());
         entity.setDescription(role.getDescription());
 
@@ -26,12 +27,16 @@ public class RoleMapper {
 
     public static Role toDomain(RoleJpaEntity entity) {
 
+        if (entity == null) {
+            return null;
+        }
+
         Role role = Role.create(
                 entity.getRoleName(),
                 entity.getDescription()
         );
 
-        setField(role, "id", entity.getId().longValue());
+        setField(role, "id", entity.getId());
 
         return role;
     }
@@ -44,16 +49,16 @@ public class RoleMapper {
 
         try {
 
-            Field field = target.getClass()
-                    .getDeclaredField(fieldName);
-
+            Field field = target.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
-
             field.set(target, value);
 
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
 
-            throw new RuntimeException(e);
+            throw new RuntimeException(
+                    "Failed to set field '" + fieldName + "' on " + target.getClass().getSimpleName(),
+                    e
+            );
 
         }
     }

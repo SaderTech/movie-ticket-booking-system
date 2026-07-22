@@ -14,4 +14,8 @@ public interface RoleRepository {
     Optional<Role> findByRoleName(String roleName);
 
     List<Role> findAll();
+
+    boolean existsByRoleName(String roleName);
+
+    void deleteById(Long id);
 }
