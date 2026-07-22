@@ -6,6 +6,7 @@ public final class Constants {
 
     public static final String TOPIC_BOOKING_CONFIRMED = "booking.confirmed";
     public static final String TOPIC_BOOKING_CANCELLED = "booking.cancelled";
+    public static final String TOPIC_TICKET_BOOKED = "booking.ticket-booked";
     public static final String TOPIC_SEAT_HOLD_CREATED = "booking.seat-hold.created";
     public static final String TOPIC_SEAT_HOLD_EXPIRED = "booking.seat-hold.expired";
     public static final String TOPIC_PAYMENT_SUCCESS = "payment.success";
@@ -18,3 +19,4 @@ public final class Constants {
     private Constants() {
     }
 }
+

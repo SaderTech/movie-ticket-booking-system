@@ -16,7 +16,7 @@ public class QrCodeController {
             value = ApiPath.TICKET,
             produces = MediaType.IMAGE_PNG_VALUE
     )
-    public byte[] generateTicketQr(@PathVariable String ticketCode) {
+    public byte[] generateTicketQr(@PathVariable("ticketCode") String ticketCode) {
         return generateQrCodeUseCase.execute(ticketCode);
     }
 }
