@@ -5,52 +5,138 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.application.command.ConfirmBookingCommand;
 import com.movieticket.bookingservice.application.mapper.BookingResponseMapper;
-import com.movieticket.bookingservice.application.usecase.ConfirmBookingUseCase;
 import com.movieticket.bookingservice.domain.aggregate.BookingAggregate;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
-import com.movieticket.bookingservice.domain.port.*;
 import com.movieticket.bookingservice.domain.vo.BookingCode;
 import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
+import com.movieticket.bookingservice.infrastructure.adapter.VnPayUtil;
 import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
-import com.movieticket.bookingservice.infrastructure.client.CinemaClientResponse;
 import com.movieticket.bookingservice.infrastructure.client.MovieClient;
+import com.movieticket.bookingservice.infrastructure.client.SeatClient;
+import com.movieticket.bookingservice.infrastructure.client.ShowtimeClient;
+import com.movieticket.bookingservice.infrastructure.client.dto.CinemaResponse;
+import com.movieticket.bookingservice.infrastructure.client.dto.MovieResponse;
+import com.movieticket.bookingservice.infrastructure.client.dto.SeatResponse;
+import com.movieticket.bookingservice.infrastructure.client.dto.ShowtimeResponse;
+import com.movieticket.bookingservice.infrastructure.jpa.*;
+import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Objects;
+import java.util.Optional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
+public class ConfirmBookingUseCaseImpl {
 
-    private final SeatHoldRepository seatHoldRepository;
-    private final BookingRepository bookingRepository;
-    private final TicketRepository ticketRepository;
-    private final PaymentRepository paymentRepository;
-    private final BookingEventOutboxRepository outboxRepository;
-    private final SagaTransactionRepository sagaTransactionRepository;
+    private final JpaSeatHoldRepository seatHoldRepository;
+    private final JpaBookingRepository bookingRepository;
+    private final JpaTicketRepository ticketRepository;
+    private final JpaPaymentRepository paymentRepository;
+    private final JpaSagaTransactionRepository sagaTransactionRepository;
+    private final DomainEventPublisherImpl domainEventPublisher;
     private final PaymentAdapter paymentAdapter;
+    private final JpaBookingSettingRepository bookingSettingRepository;
+    private final ShowtimeClient showtimeClient;
     private final MovieClient movieClient;
     private final CinemaClient cinemaClient;
+    private final SeatClient seatClient;
+    private final RedissonClient redissonClient;
+    private final ObjectMapper objectMapper;
+    private final JpaIdempotencyRecordRepository idempotencyRecordRepository;
 
-    @Override
-    @Transactional
+    private static final String SETTING_TICKET_PRICE = "default_ticket_price";
+    private static final String SETTING_LOCK_WAIT = "lock_wait_time_seconds";
+    private static final String SETTING_LOCK_LEASE = "lock_lease_time_seconds";
+    private static final String SETTING_HOLD_PAYMENT_EXTENSION = "hold_payment_extension_minutes";
+    private static final int DEFAULT_TICKET_PRICE = 90000;
+    private static final int DEFAULT_LOCK_WAIT = 2;
+    private static final int DEFAULT_LOCK_LEASE = 10;
+    private static final int DEFAULT_HOLD_PAYMENT_EXTENSION = 30;
+
+    @Lazy
+    @Autowired
+    private ConfirmBookingUseCaseImpl self;
+
     public BookingResponse execute(ConfirmBookingCommand command) {
+        RLock lock = redissonClient.getLock("lock:hold:" + command.getHoldToken());
+        int lockWait = getIntSetting(SETTING_LOCK_WAIT, DEFAULT_LOCK_WAIT);
+        int lockLease = getIntSetting(SETTING_LOCK_LEASE, DEFAULT_LOCK_LEASE);
+        try {
+            boolean acquired = lock.tryLock(lockWait, lockLease, TimeUnit.SECONDS);
+            if (!acquired) {
+                throw new ApiException(ErrorCode.BOOKING_CONFLICT, 409,
+                        "Another transaction is processing this hold token: " + command.getHoldToken());
+            }
+            return self.doExecute(command);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ApiException(ErrorCode.INTERNAL_ERROR, "Lock acquisition interrupted");
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                try { lock.unlock(); } catch (Exception e) { log.warn("Error releasing hold lock: {}", e.getMessage()); }
+            }
+        }
+    }
+
+    @Transactional
+    protected BookingResponse doExecute(ConfirmBookingCommand command) {
+        String idempotencyKey = command.getIdempotencyKey();
+        String requestHash = computeRequestHash(command);
+        if (idempotencyKey != null) {
+            Optional<BookingResponse> cached = checkIdempotency(idempotencyKey, requestHash);
+            if (cached.isPresent()) {
+                return cached.get();
+            }
+            try {
+                IdempotencyRecord processingRecord = IdempotencyRecord.builder()
+                        .idempotencyKey(idempotencyKey)
+                        .requestHash(requestHash)
+                        .operationType("CONFIRM")
+                        .status(IdempotencyStatus.PROCESSING)
+                        .expiresAt(LocalDateTime.now().plusHours(1))
+                        .build();
+                idempotencyRecordRepository.saveAndFlush(processingRecord);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                Optional<BookingResponse> rivalCached = checkIdempotency(idempotencyKey, requestHash);
+                if (rivalCached.isPresent()) {
+                    return rivalCached.get();
+                }
+            }
+        }
+
         SeatHold seatHold = seatHoldRepository.findByHoldToken(command.getHoldToken())
                 .orElseThrow(() -> new ApiException(ErrorCode.INVALID_HOLD_TOKEN,
                         "Hold token not found: " + command.getHoldToken()));
+
+        if (!Objects.equals(seatHold.getUserId(), command.getUserId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN, 403,
+                    "Hold token does not belong to the current user");
+        }
 
         if (!seatHold.isActive()) {
             throw new ApiException(ErrorCode.HOLD_EXPIRED,
@@ -58,19 +144,25 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
         }
 
         BookingCode bookingCode = BookingCode.generate();
+        BigDecimal ticketPrice = BigDecimal.valueOf(getIntSetting(SETTING_TICKET_PRICE, DEFAULT_TICKET_PRICE));
         BigDecimal totalAmount = seatHold.getSeats().stream()
-                .map(shSeat -> new BigDecimal("90000")) // tạm
+                .map(shSeat -> ticketPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        Map<String, String> seatTypeMap = fetchSeatTypeMap(seatHold.getShowtimeId());
+
         List<BookingSeat> bookingSeats = seatHold.getSeats().stream()
-                .map(shSeat -> BookingSeat.builder()
-                        .showtimeId(seatHold.getShowtimeId())
-                        .seatCode(shSeat.getSeatCode())
-                        .seatType("NORMAL")
-                        .price(new BigDecimal("90000"))
-                        .status(BookingSeatStatus.PENDING)
-                        .createdAt(LocalDateTime.now())
-                        .build())
+                .map(shSeat -> {
+                    String seatType = seatTypeMap.getOrDefault(shSeat.getSeatCode(), "NORMAL");
+                    return BookingSeat.builder()
+                            .showtimeId(seatHold.getShowtimeId())
+                            .seatCode(shSeat.getSeatCode())
+                            .seatType(seatType)
+                            .price(ticketPrice)
+                            .status(BookingSeatStatus.PENDING)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         Booking booking = Booking.builder()
@@ -84,14 +176,14 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
                 .updatedAt(LocalDateTime.now())
                 .seats(bookingSeats)
                 .build();
+        for (BookingSeat seat : bookingSeats) {
+            seat.setBooking(booking);
+        }
         booking = bookingRepository.save(booking);
-
-        final Long bookingId = booking.getId();
-        booking.getSeats().forEach(s -> s.assignToBooking(bookingId));
 
         SagaTransaction saga = SagaTransaction.builder()
                 .sagaId(UUID.randomUUID().toString())
-                .bookingId(bookingId)
+                .bookingId(booking.getId())
                 .status(SagaStatus.STARTED)
                 .currentStep("PAYMENT")
                 .createdAt(LocalDateTime.now())
@@ -99,127 +191,36 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
                 .build();
         saga = sagaTransactionRepository.save(saga);
 
-        if ("VNPAY".equalsIgnoreCase(command.getPaymentMethod())) {
-            Payment payment = Payment.builder()
-                    .bookingId(bookingId)
-                    .transactionRef("TXN" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase())
-                    .method("VNPAY")
-                    .amount(totalAmount)
-                    .status(PaymentStatus.PENDING)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-            payment = paymentRepository.save(payment);
-
-            String ipAddress = command.getIpAddress() != null ? command.getIpAddress() : "127.0.0.1";
-            String paymentUrl = paymentAdapter.createPaymentUrl(booking, payment, ipAddress);
-
-            return BookingResponseMapper.toVnPayPendingResponse(booking, payment, paymentUrl);
+        if (!"VNPAY".equalsIgnoreCase(command.getPaymentMethod())) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST,
+                    "Only VNPAY payment method is supported");
         }
 
-        Payment payment = paymentAdapter.processPayment(booking, command.getPaymentMethod());
-        payment.assignToBooking(bookingId);
+        Payment payment = Payment.builder()
+                .bookingId(booking.getId())
+                .transactionRef("TXN" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase())
+                .method("VNPAY")
+                .amount(totalAmount)
+                .status(PaymentStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
         payment = paymentRepository.save(payment);
 
-        if (payment.getStatus() == PaymentStatus.PAID) {
-            // Lấy thông tin showtime (tạm bỏ qua, dùng giá trị mặc định)
-            Long movieId = null;
-            Long cinemaId = null;
-            Long hallId = null;
-            String hallName = null;
-            LocalDate showDate = LocalDate.now();
-            LocalTime startTime = LocalTime.of(0, 0);
-            LocalTime endTime = LocalTime.of(0, 0);
+        String ipAddress = command.getIpAddress() != null ? command.getIpAddress() : "127.0.0.1";
+        String paymentUrl = paymentAdapter.createPaymentUrl(booking, payment, ipAddress, command.getReturnUrl());
 
-            // Gọi MovieService lấy thông tin phim
-            final String[] movieTitle = {null};
-            final String[] moviePosterUrl = {null};
-            try {
-                Map<String, Object> movieData = movieClient.getMovie(movieId); // cần movieId từ showtime
-                movieTitle[0] = (String) movieData.get("title");
-                moviePosterUrl[0] = (String) movieData.get("posterUrl");
-            } catch (Exception e) {
-                log.warn("Could not fetch movie details: {}", e.getMessage());
-            }
+        int holdPaymentExtension = getIntSetting(SETTING_HOLD_PAYMENT_EXTENSION, DEFAULT_HOLD_PAYMENT_EXTENSION);
+        seatHold.extendExpiry(holdPaymentExtension);
+        seatHoldRepository.save(seatHold);
+        log.info("Extended hold {} expiry by {} minutes for VNPay payment window (new expiresAt: {})",
+                seatHold.getHoldToken(), holdPaymentExtension, seatHold.getExpiresAt());
 
-            // Gọi CinemaService lấy thông tin rạp
-            final String[] cinemaName = {null};
-            try {
-                CinemaClientResponse cinemaData = cinemaClient.getCinema(cinemaId);
-                cinemaName[0] = cinemaData.name();
-            } catch (Exception e) {
-                log.warn("Could not fetch cinema details: {}", e.getMessage());
-            }
-
-            List<Ticket> tickets = bookingSeats.stream()
-                    .map(bs -> {
-                        String ticketCode = "TCK" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
-                        return Ticket.builder()
-                                .ticketCode(ticketCode)
-                                .bookingId(bookingId)
-                                .userId(command.getUserId())
-                                .showtimeId(seatHold.getShowtimeId())
-                                .movieId(movieId)
-                                .movieTitle(movieTitle[0])
-                                .moviePosterUrl(moviePosterUrl[0])
-                                .cinemaId(cinemaId)
-                                .cinemaName(cinemaName[0])
-                                .hallId(hallId)
-                                .hallName(hallName)
-                                .seatCode(bs.getSeatCode())
-                                .seatType(bs.getSeatType())
-                                .showDate(showDate)
-                                .startTime(startTime)
-                                .endTime(endTime)
-                                .price(bs.getPrice())
-                                .qrPayload("QR:" + ticketCode + ":" + bs.getSeatCode())
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
-                                .build();
-                    })
-                    .collect(Collectors.toList());
-
-            BookingAggregate aggregate = BookingAggregate.forNewConfirm(seatHold, booking, payment, saga);
-            aggregate.confirmBooking(tickets);
-
-            booking = bookingRepository.save(aggregate.getBooking());
-            tickets = ticketRepository.saveAll(aggregate.getTickets());
-            payment = paymentRepository.save(aggregate.getPayment());
-            seatHoldRepository.save(aggregate.getSeatHold());
-            sagaTransactionRepository.save(aggregate.getSaga());
-
-            BookingEventOutbox outbox = BookingEventOutbox.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .aggregateType("Booking")
-                    .aggregateId(bookingCode.value())
-                    .bookingId(bookingId)
-                    .eventType("BOOKING_CONFIRMED")
-                    .topic("booking.confirmed")
-                    .payloadJson("{\"bookingCode\":\"" + bookingCode.value()
-                            + "\",\"userId\":" + command.getUserId()
-                            + ",\"showtimeId\":" + seatHold.getShowtimeId()
-                            + ",\"totalAmount\":" + totalAmount + "}")
-                    .status(OutboxStatus.PENDING)
-                    .retryCount(0)
-                    .build();
-            outboxRepository.save(outbox);
-
-            return BookingResponseMapper.toResponse(booking, tickets, payment);
-        } else {
-            BookingAggregate aggregate = BookingAggregate.forNewConfirm(seatHold, booking, payment, saga);
-            aggregate.compensateFailedPayment();
-
-            bookingRepository.save(aggregate.getBooking());
-            seatHoldRepository.save(aggregate.getSeatHold());
-            sagaTransactionRepository.save(aggregate.getSaga());
-
-            throw new ApiException(ErrorCode.PAYMENT_FAILED,
-                    "Payment failed: " + (payment.getFailureReason() != null ? payment.getFailureReason() : "Unknown error"));
-        }
+        BookingResponse response = BookingResponseMapper.toVnPayPendingResponse(booking, payment, paymentUrl);
+        cacheIdempotencyResponse(idempotencyKey, response);
+        return response;
     }
 
-    @Override
-    @Transactional
     public BookingResponse handleVnPayReturn(Map<String, String> vnpayParams) {
         if (!paymentAdapter.verifyReturn(vnpayParams)) {
             log.warn("VNPay return hash verification failed");
@@ -231,6 +232,27 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "Missing vnp_TxnRef in VNPay return");
         }
 
+        RLock lock = redissonClient.getLock("lock:vnpay:" + txnRef);
+        int lockWait = getIntSetting(SETTING_LOCK_WAIT, DEFAULT_LOCK_WAIT);
+        int lockLease = getIntSetting(SETTING_LOCK_LEASE, DEFAULT_LOCK_LEASE);
+        try {
+            boolean acquired = lock.tryLock(lockWait, lockLease, TimeUnit.SECONDS);
+            if (!acquired) {
+                throw new ApiException(ErrorCode.INTERNAL_ERROR, "Could not acquire lock for VNPay return processing");
+            }
+            return self.doHandleVnPayReturn(vnpayParams, txnRef);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ApiException(ErrorCode.INTERNAL_ERROR, "Lock acquisition interrupted");
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                try { lock.unlock(); } catch (Exception e) { log.warn("Error releasing VNPay lock: {}", e.getMessage()); }
+            }
+        }
+    }
+
+    @Transactional
+    protected BookingResponse doHandleVnPayReturn(Map<String, String> vnpayParams, String txnRef) {
         Payment payment = paymentRepository.findByTransactionRef(txnRef)
                 .orElseThrow(() -> new ApiException(ErrorCode.PAYMENT_FAILED,
                         "Payment not found for transaction: " + txnRef));
@@ -248,13 +270,107 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
                 .orElseThrow(() -> new ApiException(ErrorCode.BOOKING_NOT_FOUND,
                         "Booking not found for payment: " + txnRef));
 
+        try {
+            String rawJson = objectMapper.writeValueAsString(vnpayParams);
+            payment.setVnPayDetails(vnpayParams.get("vnp_TransactionNo"), rawJson);
+        } catch (Exception e) {
+            log.warn("Failed to serialize VNPay response: {}", e.getMessage());
+        }
+
         String responseCode = vnpayParams.get("vnp_ResponseCode");
+        String transactionStatus = vnpayParams.get("vnp_TransactionStatus");
+
+        log.info("VNPay return: txnRef={}, responseCode={} ({}), transactionStatus={}",
+                txnRef, responseCode, VnPayUtil.getResponseCodeDescription(responseCode), transactionStatus);
+
+        if (transactionStatus != null && !"00".equals(transactionStatus)) {
+            log.warn("VNPay transaction status indicates failure: {} ({})",
+                    transactionStatus, VnPayUtil.getResponseCodeDescription(transactionStatus));
+        }
+
+        String vnpAmountStr = vnpayParams.get("vnp_Amount");
+        if (vnpAmountStr != null) {
+            try {
+                long expectedAmount = payment.getAmount().multiply(java.math.BigDecimal.valueOf(100)).longValue();
+                long vnpAmount = Long.parseLong(vnpAmountStr);
+                if (vnpAmount != expectedAmount) {
+                    log.error("VNPay amount mismatch: expected {}, got {}", expectedAmount, vnpAmount);
+                    throw new ApiException(ErrorCode.PAYMENT_FAILED,
+                            "VNPay amount mismatch: expected " + expectedAmount + ", got " + vnpAmount);
+                }
+            } catch (NumberFormatException e) {
+                log.warn("Invalid vnp_Amount format: {}", vnpAmountStr);
+            }
+        }
+
         if ("00".equals(responseCode)) {
             final Long bkId = booking.getId();
             final Long bkUserId = booking.getUserId();
             final Long bkShowtimeId = booking.getShowtimeId();
-            payment.markPaid(txnRef);
-            booking.confirm();
+
+            Long movieId = null;
+            Long cinemaId = null;
+            Long hallId = null;
+            String hallName = null;
+            LocalDate showDate;
+            LocalTime startTime;
+            LocalTime endTime;
+            try {
+                ShowtimeResponse showtimeData = showtimeClient.getShowtime(bkShowtimeId);
+                movieId = showtimeData.movieId();
+                cinemaId = showtimeData.cinemaId();
+                hallId = showtimeData.roomId();
+                showDate = showtimeData.showDate();
+                startTime = showtimeData.startTime();
+                endTime = showtimeData.endTime();
+            } catch (Exception e) {
+                log.warn("Could not fetch showtime details, using defaults: {}", e.getMessage());
+                showDate = LocalDate.now();
+                startTime = LocalTime.of(19, 0);
+                endTime = LocalTime.of(21, 30);
+            }
+
+            String movieTitle = null;
+            String moviePosterUrl = null;
+            if (movieId != null) {
+                try {
+                    MovieResponse movieData = movieClient.getMovie(movieId);
+                    movieTitle = movieData.title();
+                    moviePosterUrl = movieData.posterUrl();
+                } catch (Exception e) {
+                    log.warn("Could not fetch movie details: {}", e.getMessage());
+                }
+            }
+
+            String cinemaName = null;
+            if (cinemaId != null) {
+                try {
+                    CinemaResponse cinemaData = cinemaClient.getCinema(cinemaId);
+                    cinemaName = cinemaData.name();
+                } catch (Exception e) {
+                    log.warn("Could not fetch cinema details: {}", e.getMessage());
+                }
+            }
+
+            final LocalDate finalShowDate = showDate;
+            final LocalTime finalStartTime = startTime;
+            final LocalTime finalEndTime = endTime;
+            final String finalMovieTitle = movieTitle;
+            final String finalMoviePosterUrl = moviePosterUrl;
+            final String finalCinemaName = cinemaName;
+            final Long finalMovieId = movieId;
+            final Long finalCinemaId = cinemaId;
+            final Long finalHallId = hallId;
+            final String finalHallName = hallName;
+
+            String holdToken = booking.getHoldToken();
+            Long bookingIdLocal = booking.getId();
+            SeatHold seatHold = seatHoldRepository.findByHoldToken(holdToken)
+                    .orElseThrow(() -> new ApiException(ErrorCode.HOLD_NOT_FOUND,
+                            "Seat hold not found: " + holdToken));
+            SagaTransaction saga = sagaTransactionRepository.findByBookingId(bookingIdLocal)
+                    .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR,
+                            "Saga not found for booking: " + bookingIdLocal));
 
             List<Ticket> tickets = booking.getSeats().stream()
                     .map(bs -> {
@@ -264,70 +380,193 @@ public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
                                 .bookingId(bkId)
                                 .userId(bkUserId)
                                 .showtimeId(bkShowtimeId)
+                                .movieId(finalMovieId)
+                                .movieTitle(finalMovieTitle)
+                                .moviePosterUrl(finalMoviePosterUrl)
+                                .cinemaId(finalCinemaId)
+                                .cinemaName(finalCinemaName)
+                                .hallId(finalHallId)
+                                .hallName(finalHallName)
                                 .seatCode(bs.getSeatCode())
                                 .seatType(bs.getSeatType())
                                 .price(bs.getPrice())
-                                .showDate(LocalDate.now())
-                                .startTime(LocalTime.of(19, 0))
-                                .endTime(LocalTime.of(21, 30))
+                                .showDate(finalShowDate)
+                                .startTime(finalStartTime)
+                                .endTime(finalEndTime)
                                 .qrPayload("QR:" + ticketCode + ":" + bs.getSeatCode())
                                 .createdAt(LocalDateTime.now())
                                 .updatedAt(LocalDateTime.now())
                                 .build();
                     })
                     .collect(Collectors.toList());
-            tickets.forEach(Ticket::issue);
 
-            booking = bookingRepository.save(booking);
-            tickets = ticketRepository.saveAll(tickets);
-            payment = paymentRepository.save(payment);
+            BookingAggregate aggregate = BookingAggregate.forNewConfirm(seatHold, booking, payment, saga);
+            aggregate.confirmBooking(tickets);
 
-            seatHoldRepository.findByHoldToken(booking.getHoldToken()).ifPresent(sh -> {
-                sh.convert();
-                seatHoldRepository.save(sh);
-            });
+            try {
+                booking = bookingRepository.save(aggregate.getBooking());
+                tickets = ticketRepository.saveAll(aggregate.getTickets());
+                payment = paymentRepository.save(aggregate.getPayment());
+                seatHoldRepository.save(aggregate.getSeatHold());
+                sagaTransactionRepository.save(aggregate.getSaga());
+            } catch (DataIntegrityViolationException e) {
+                log.warn("Booking conflict detected for hold token {}: {}", holdToken, e.getMessage());
+                Booking freshBooking = bookingRepository.findById(bookingIdLocal).orElse(null);
+                Payment freshPayment = paymentRepository.findByTransactionRef(txnRef).orElse(null);
+                if (freshPayment != null && freshPayment.getStatus() != PaymentStatus.FAILED) {
+                    freshPayment.markFailed("Double booking detected: " + e.getMessage());
+                }
+                SeatHold freshSeatHold = seatHoldRepository.findByHoldToken(holdToken).orElse(null);
+                SagaTransaction freshSaga = sagaTransactionRepository.findByBookingId(bookingIdLocal).orElse(null);
+                BookingAggregate compensationAgg = BookingAggregate.forNewConfirm(freshSeatHold, freshBooking, freshPayment, freshSaga);
+                compensationAgg.compensateFailedPayment("Double booking detected: " + e.getMessage());
+                if (compensationAgg.getPayment() != null) {
+                    paymentRepository.save(compensationAgg.getPayment());
+                }
+                if (compensationAgg.getBooking() != null) {
+                    bookingRepository.save(compensationAgg.getBooking());
+                }
+                if (compensationAgg.getSeatHold() != null) {
+                    seatHoldRepository.save(compensationAgg.getSeatHold());
+                }
+                if (compensationAgg.getSaga() != null) {
+                    sagaTransactionRepository.save(compensationAgg.getSaga());
+                }
+                domainEventPublisher.publishAll(compensationAgg.getDomainEvents());
+                compensationAgg.clearDomainEvents();
+                throw new ApiException(ErrorCode.BOOKING_CONFLICT, 409, "Seat already booked by another user");
+            }
 
-            sagaTransactionRepository.findByBookingId(booking.getId()).ifPresent(sg -> {
-                sg.complete();
-                sagaTransactionRepository.save(sg);
-            });
-
-            BookingEventOutbox outbox = BookingEventOutbox.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .aggregateType("Booking")
-                    .aggregateId(booking.getBookingCode())
-                    .bookingId(booking.getId())
-                    .eventType("BOOKING_CONFIRMED")
-                    .topic("booking.confirmed")
-                    .payloadJson("{\"bookingCode\":\"" + booking.getBookingCode()
-                            + "\",\"userId\":" + booking.getUserId()
-                            + ",\"showtimeId\":" + booking.getShowtimeId()
-                            + ",\"totalAmount\":" + booking.getTotalAmount() + "}")
-                    .status(OutboxStatus.PENDING)
-                    .retryCount(0)
-                    .build();
-            outboxRepository.save(outbox);
+            domainEventPublisher.publishAll(aggregate.getDomainEvents());
+            aggregate.clearDomainEvents();
 
             return BookingResponseMapper.toResponse(booking, tickets, payment);
         } else {
-            payment.markFailed("VNPay returned responseCode: " + responseCode);
-            paymentRepository.save(payment);
+            String errorDesc = VnPayUtil.getResponseCodeDescription(responseCode);
+            payment.markFailed("VNPay returned responseCode: " + responseCode + " - " + errorDesc);
 
-            booking.fail("VNPay payment failed: responseCode=" + responseCode);
-            bookingRepository.save(booking);
+            SeatHold seatHold = seatHoldRepository.findByHoldToken(booking.getHoldToken()).orElse(null);
+            SagaTransaction saga = sagaTransactionRepository.findByBookingId(booking.getId()).orElse(null);
 
-            seatHoldRepository.findByHoldToken(booking.getHoldToken()).ifPresent(sh -> {
-                sh.release();
-                seatHoldRepository.save(sh);
-            });
+            BookingAggregate aggregate = BookingAggregate.forNewConfirm(seatHold, booking, payment, saga);
+            aggregate.compensateFailedPayment("VNPay payment failed: responseCode=" + responseCode + " - " + errorDesc);
 
-            sagaTransactionRepository.findByBookingId(booking.getId()).ifPresent(sg -> {
-                sg.fail("VNPay payment failed: responseCode=" + responseCode);
-                sagaTransactionRepository.save(sg);
-            });
+            paymentRepository.save(aggregate.getPayment());
+            bookingRepository.save(aggregate.getBooking());
+            if (aggregate.getSeatHold() != null) {
+                seatHoldRepository.save(aggregate.getSeatHold());
+            }
+            if (aggregate.getSaga() != null) {
+                sagaTransactionRepository.save(aggregate.getSaga());
+            }
+
+            domainEventPublisher.publishAll(aggregate.getDomainEvents());
+            aggregate.clearDomainEvents();
 
             throw new ApiException(ErrorCode.PAYMENT_FAILED,
-                    "VNPay payment failed with responseCode: " + responseCode);
+                    "VNPay payment failed: " + errorDesc);
+        }
+    }
+
+    private Map<String, String> fetchSeatTypeMap(Long showtimeId) {
+        try {
+            ShowtimeResponse showtimeData = showtimeClient.getShowtime(showtimeId);
+            Long hallId = showtimeData.roomId();
+            if (hallId == null) {
+                log.warn("No hallId in showtime data, falling back to NORMAL seat type");
+                return Map.of();
+            }
+            List<SeatResponse> seats = seatClient.getSeatsByHallId(hallId);
+            Map<String, String> map = new java.util.HashMap<>();
+            for (SeatResponse seat : seats) {
+                if (seat.rowName() != null && seat.seatNumber() != null && seat.seatTypeCode() != null) {
+                    map.put(seat.rowName() + seat.seatNumber(), seat.seatTypeCode());
+                }
+            }
+            log.debug("Fetched seat type map for hall {}: {} entries", hallId, map.size());
+            return map;
+        } catch (Exception e) {
+            log.warn("Could not fetch seat types from cinema service, falling back to NORMAL: {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
+    private Optional<BookingResponse> checkIdempotency(String idempotencyKey, String requestHash) {
+        return idempotencyRecordRepository.findByIdempotencyKey(idempotencyKey)
+                .flatMap(rec -> {
+                    if (rec.getRequestHash() != null && !rec.getRequestHash().equals(requestHash)) {
+                        throw new ApiException(ErrorCode.INVALID_REQUEST, 409,
+                                "Idempotency key reused with different request payload");
+                    }
+                    switch (rec.getStatus()) {
+                        case SUCCEEDED -> {
+                            try {
+                                return Optional.of(objectMapper.readValue(rec.getResponseBody(), BookingResponse.class));
+                            } catch (Exception e) {
+                                log.warn("Failed to deserialize cached idempotency response: {}", e.getMessage());
+                            }
+                        }
+                        case PROCESSING -> throw new ApiException(ErrorCode.INVALID_REQUEST, 409, "Request is already being processed");
+                        case FAILED -> {}
+                    }
+                    return Optional.empty();
+                });
+    }
+
+    private void cacheIdempotencyResponse(String idempotencyKey, BookingResponse response) {
+        if (idempotencyKey == null) return;
+        idempotencyRecordRepository.findByIdempotencyKey(idempotencyKey).ifPresent(rec -> {
+            try {
+                rec.succeed(objectMapper.writeValueAsString(response));
+                idempotencyRecordRepository.save(rec);
+            } catch (Exception e) {
+                log.warn("Failed to cache idempotency response: {}", e.getMessage());
+            }
+        });
+    }
+
+    private String computeRequestHash(ConfirmBookingCommand command) {
+        try {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("holdToken", command.getHoldToken());
+            data.put("paymentMethod", command.getPaymentMethod());
+            data.put("returnUrl", command.getReturnUrl());
+            String json = objectMapper.writeValueAsString(data);
+            return sha256(json);
+        } catch (Exception e) {
+            log.warn("Failed to compute request hash: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String sha256(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    private int getIntSetting(String key, int defaultValue) {
+        try {
+            return bookingSettingRepository.findBySettingKey(key)
+                    .map(setting -> {
+                        try {
+                            return Integer.parseInt(setting.getSettingValue());
+                        } catch (NumberFormatException e) {
+                            return defaultValue;
+                        }
+                    })
+                    .orElse(defaultValue);
+        } catch (Exception e) {
+            log.warn("Could not read setting {}, using default {}: {}", key, defaultValue, e.getMessage());
+            return defaultValue;
         }
     }
 }

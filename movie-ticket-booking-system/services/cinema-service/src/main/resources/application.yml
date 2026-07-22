@@ -6,29 +6,45 @@ spring:
     name: CINEMA-SERVICE
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cinema_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/cinema_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${DB_PASSWORD:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:admin}}
     driver-class-name: org.postgresql.Driver
+
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+
     open-in-view: false
-    show-sql: true
+
+    show-sql: ${JPA_SHOW_SQL:false}
+
     properties:
       hibernate:
         format_sql: true
+        default_batch_fetch_size: 25
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   cache:
     type: redis
+
     redis:
       time-to-live: 10m
+      cache-null-values: false
 
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:3s}
+
       repositories:
         enabled: false
 
@@ -37,6 +53,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
   api-docs:
     path: /v3/api-docs
 
@@ -45,9 +62,12 @@ eureka:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 15
+
   client:
+    enabled: true
     register-with-eureka: true
     fetch-registry: true
+
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
 
@@ -55,16 +75,27 @@ management:
   tracing:
     sampling:
       probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+
   health:
     redis:
       enabled: true
+
   endpoints:
     web:
       exposure:
         include: health,info
+
   endpoint:
     health:
       show-details: always
+
+logging:
+  level:
+    com.movieticket.cinemaservice: INFO
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

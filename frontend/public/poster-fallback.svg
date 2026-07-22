@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Poster phim chưa có ảnh</title>
+  <desc id="desc">Nền xanh navy với biểu tượng cuộn phim</desc>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1f3a"/>
+      <stop offset="1" stop-color="#157aa8"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#g)"/>
+  <circle cx="300" cy="380" r="128" fill="none" stroke="#66d9ef" stroke-width="18" opacity=".82"/>
+  <circle cx="300" cy="380" r="28" fill="#ff8a34"/>
+  <circle cx="300" cy="296" r="34" fill="#fff" opacity=".78"/>
+  <circle cx="381" cy="380" r="34" fill="#fff" opacity=".78"/>
+  <circle cx="300" cy="464" r="34" fill="#fff" opacity=".78"/>
+  <circle cx="219" cy="380" r="34" fill="#fff" opacity=".78"/>
+  <path d="M410 506h96v28H393z" fill="#66d9ef" opacity=".82"/>
+  <text x="300" y="650" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="42" font-weight="700">MovieTicket</text>
+  <text x="300" y="700" text-anchor="middle" fill="#d9f6ff" font-family="Arial, sans-serif" font-size="24">Poster đang cập nhật</text>
+</svg>

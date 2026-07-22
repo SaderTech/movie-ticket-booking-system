@@ -13,4 +13,5 @@ public class ConfirmBookingCommand {
     private final String paymentMethod;
     private final String returnUrl;
     private final String ipAddress;
+    private final String idempotencyKey;
 }

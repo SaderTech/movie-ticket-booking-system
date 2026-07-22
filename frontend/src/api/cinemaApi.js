@@ -1,0 +1,25 @@
+import { httpClient } from './httpClient'
+
+export const cinemaApi = {
+  list: (status) => httpClient.get('/api/cinemas', { params: status ? { status } : undefined }).then((r) => r.data),
+  get: (id) => httpClient.get(`/api/cinemas/${id}`).then((r) => r.data),
+  create: (payload) => httpClient.post('/api/cinemas', payload).then((r) => r.data),
+  update: (id, payload) => httpClient.put(`/api/cinemas/${id}`, payload).then((r) => r.data),
+  halls: (cinemaId) => httpClient.get('/api/halls', { params: { cinemaId } }).then((r) => r.data),
+  hall: (id) => httpClient.get(`/api/halls/${id}`).then((r) => r.data),
+  createHall: (payload) => httpClient.post('/api/halls', payload).then((r) => r.data),
+  updateHall: (id, payload) => httpClient.put(`/api/halls/${id}`, payload).then((r) => r.data),
+  hallAvailability: (id, startTime, endTime) => httpClient.get(`/api/halls/${id}/availability`, { params: { startTime, endTime } }).then((r) => r.data),
+  seats: (hallId) => httpClient.get('/api/seats', { params: { hallId } }).then((r) => r.data),
+  seat: (id) => httpClient.get(`/api/seats/${id}`).then((r) => r.data),
+  createSeat: (payload) => httpClient.post('/api/seats', payload).then((r) => r.data),
+  updateSeat: (id, payload) => httpClient.put(`/api/seats/${id}`, payload).then((r) => r.data),
+  seatTypes: () => httpClient.get('/api/seat-types').then((r) => r.data),
+  seatType: (id) => httpClient.get(`/api/seat-types/${id}`).then((r) => r.data),
+  createSeatType: (payload) => httpClient.post('/api/seat-types', payload).then((r) => r.data),
+  updateSeatType: (id, payload) => httpClient.put(`/api/seat-types/${id}`, payload).then((r) => r.data),
+  maintenances: (hallId) => httpClient.get('/api/hall-maintenances', { params: { hallId } }).then((r) => r.data),
+  maintenance: (id) => httpClient.get(`/api/hall-maintenances/${id}`).then((r) => r.data),
+  createMaintenance: (payload) => httpClient.post('/api/hall-maintenances', payload).then((r) => r.data),
+  updateMaintenanceStatus: (id, status) => httpClient.patch(`/api/hall-maintenances/${id}/status`, { status }).then((r) => r.data),
+}

@@ -4,54 +4,74 @@ server:
 spring:
   application:
     name: BOOKING-SERVICE
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/booking_db
-    username: postgres
-    password: ${DB_PASSWORD:admin}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/booking_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:admin}}
     driver-class-name: org.postgresql.Driver
+
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
       idle-timeout: 300000
       connection-timeout: 20000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+
     open-in-view: false
-    show-sql: true
+
+    show-sql: ${JPA_SHOW_SQL:false}
+
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_batch_fetch_size: 25
 
   data:
     redis:
-      host: localhost
-      port: 6379
-      timeout: 3000
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:3s}
+
       repositories:
         enabled: false
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       retries: 3
+
       properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
         spring.json.type.mapping: >
           seatHoldCreatedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.SeatHoldCreatedEvent,
           seatHoldExpiredEvent:com.movieticket.bookingservice.infrastructure.kafka.event.SeatHoldExpiredEvent,
           bookingConfirmedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingConfirmedEvent,
           ticketBookedEvent:com.movieticket.bookingservice.infrastructure.kafka.event.TicketBookedEvent,
           bookingCancelledEvent:com.movieticket.bookingservice.infrastructure.kafka.event.BookingCancelledEvent
-        enable.idempotence: true
-        max.in.flight.requests.per.connection: 5
+
+    consumer:
+      auto-offset-reset: earliest
+
+      properties:
+        spring.json.trusted.packages: com.movieticket.*
 
   cloud:
     openfeign:
+      circuitbreaker:
+        enabled: true
+
       client:
         config:
           default:
@@ -64,39 +84,71 @@ eureka:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 15
+
   client:
     enabled: true
     register-with-eureka: true
     fetch-registry: true
+
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
 
 app:
   redis:
     embedded:
       enabled: ${APP_REDIS_EMBEDDED_ENABLED:false}
+
   kafka:
-    enabled: ${APP_KAFKA_ENABLED:false}
+    enabled: ${APP_KAFKA_ENABLED:true}
+
+    outbox:
+      poll-interval: ${APP_KAFKA_OUTBOX_POLL_INTERVAL:5000}
 
 vnpay:
-  tmn-code: TU8GEVIB
-  hash-secret: LENI87G7NEE3466DIWN9M0AXDXDV1PN5
-  url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-  return-url: http://localhost:8085/api/bookings/vnpay-return
+  tmn-code: ${VNP_TMN_CODE:TU8GEVIB}
+  hash-secret: ${VNP_HASH_SECRET}
+  url: ${VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
 
-logging:
-  level:
-    com.movieticket.bookingservice: DEBUG
-    org.springframework.kafka: INFO
-    org.redisson: INFO
-    org.hibernate.SQL: DEBUG
-    com.netflix.eureka: WARN
-    com.netflix.discovery: WARN
+  return-url: ${VNPAY_RETURN_URL:http://localhost:3000/payment-result}
+
+  allowed-return-hosts: ${VNP_ALLOWED_RETURN_HOSTS:localhost,127.0.0.1}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+  api-docs:
+    path: /v3/api-docs
 
 management:
   tracing:
     sampling:
       probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+  health:
+    redis:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.movieticket.bookingservice: ${BOOKING_LOG_LEVEL:INFO}
+    org.springframework.kafka: INFO
+    org.redisson: INFO
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

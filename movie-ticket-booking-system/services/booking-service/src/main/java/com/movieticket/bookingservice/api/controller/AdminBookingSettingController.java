@@ -6,7 +6,7 @@ import com.movieticket.bookingservice.api.dto.BookingSettingUpdateRequest;
 import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.domain.entity.BookingSetting;
-import com.movieticket.bookingservice.domain.port.BookingSettingRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingSettingRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AdminBookingSettingController {
 
-    private final BookingSettingRepository bookingSettingRepository;
+    private final JpaBookingSettingRepository bookingSettingRepository;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<BookingSettingResponse>>> getAllSettings() {

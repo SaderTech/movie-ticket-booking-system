@@ -1,17 +1,20 @@
 package com.movieticket.bookingservice.domain.event;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record SeatHoldExpiredEvent(
         String eventId,
         String holdToken,
+        Long userId,
         Long showtimeId,
+        List<String> seatCodes,
         LocalDateTime occurredAt
 ) implements DomainEvent {
 
-    public SeatHoldExpiredEvent(String holdToken, Long showtimeId) {
-        this(UUID.randomUUID().toString(), holdToken, showtimeId, LocalDateTime.now());
+    public SeatHoldExpiredEvent(String holdToken, Long userId, Long showtimeId, List<String> seatCodes) {
+        this(UUID.randomUUID().toString(), holdToken, userId, showtimeId, seatCodes, LocalDateTime.now());
     }
 
     @Override
