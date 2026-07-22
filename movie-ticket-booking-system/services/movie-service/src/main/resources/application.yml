@@ -6,19 +6,20 @@ spring:
     name: MOVIE-SERVICE
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/movie_db
-    username: postgres
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/movie_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:update}
     open-in-view: false
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
+        default_batch_fetch_size: 25
 
   cache:
     type: redis
@@ -53,6 +54,12 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
 management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
   health:
     redis:
       enabled: true

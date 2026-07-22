@@ -69,6 +69,24 @@ public class HallMaintenance {
         if (status == null) {
             throw new IllegalArgumentException("Maintenance status must not be null");
         }
+
+        if (this.status == status) {
+            return;
+        }
+
+        boolean validTransition = switch (this.status) {
+            case SCHEDULED -> status == MaintenanceStatus.IN_PROGRESS
+                    || status == MaintenanceStatus.CANCELLED;
+            case IN_PROGRESS -> status == MaintenanceStatus.COMPLETED
+                    || status == MaintenanceStatus.CANCELLED;
+            case COMPLETED, CANCELLED -> false;
+        };
+
+        if (!validTransition) {
+            throw new IllegalArgumentException(
+                    "Invalid maintenance status transition from " + this.status + " to " + status
+            );
+        }
         this.status = status;
     }
 

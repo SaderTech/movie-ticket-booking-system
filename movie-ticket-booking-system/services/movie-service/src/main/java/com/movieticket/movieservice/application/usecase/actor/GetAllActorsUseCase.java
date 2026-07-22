@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.actor;
 
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
 import com.movieticket.movieservice.infrastructure.repository.ActorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +16,7 @@ public class GetAllActorsUseCase {
     private final ActorRepository actorRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "actors", key = "'all'")
+    @Cacheable(value = "actors", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<PersonResponse> execute() {
         return actorRepository.findAll()

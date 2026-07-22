@@ -1,6 +1,8 @@
 package com.movieticket.cinemaservice.application.usecase.hall;
 
-import com.movieticket.cinemaservice.api.dto.response.HallResponse;
+import com.movieticket.cinemaservice.application.dto.response.HallSummaryResponse;
+import com.movieticket.cinemaservice.application.exception.ResourceNotFoundException;
+import com.movieticket.cinemaservice.infrastructure.repository.CinemaRepository;
 import com.movieticket.cinemaservice.infrastructure.repository.HallRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,14 +15,18 @@ import java.util.List;
 public class GetHallsByCinemaIdUseCase {
 
     private final HallRepository hallRepository;
+    private final CinemaRepository cinemaRepository;
 
     @Transactional(readOnly = true)
     @Cacheable(value = "halls", key = "'cinema:' + #p0")
 
-    public List<HallResponse> execute(Long cinemaId) {
+    public List<HallSummaryResponse> execute(Long cinemaId) {
+        if (!cinemaRepository.existsById(cinemaId)) {
+            throw new ResourceNotFoundException("Cinema not found with id: " + cinemaId);
+        }
         return hallRepository.findByCinema_Id(cinemaId)
                 .stream()
-                .map(HallResponse::from)
+                .map(HallSummaryResponse::from)
                 .toList();
     }
 }

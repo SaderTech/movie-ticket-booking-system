@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.movie;
 
-import com.movieticket.movieservice.api.dto.response.MovieResponse;
+import com.movieticket.movieservice.application.dto.response.MovieResponse;
 import com.movieticket.movieservice.domain.enums.MovieStatus;
 import com.movieticket.movieservice.infrastructure.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class GetMoviesByStatusUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'status:' + #p0.name()")
+    @Cacheable(value = "movies", key = "'status:' + #p0.name()", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute(MovieStatus status) {
         return movieRepository.findByStatus(status)

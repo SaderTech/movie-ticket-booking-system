@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.genre;
 
-import com.movieticket.movieservice.api.dto.response.GenreResponse;
+import com.movieticket.movieservice.application.dto.response.GenreResponse;
 import com.movieticket.movieservice.infrastructure.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +16,7 @@ public class GetAllGenresUseCase {
     private final GenreRepository genreRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "genres", key = "'all'")
+    @Cacheable(value = "genres", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<GenreResponse> execute() {
         return genreRepository.findAll()

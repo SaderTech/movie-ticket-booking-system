@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/showtime_db
     username: postgres
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:admin}
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,7 +18,7 @@ spring:
 
 eureka:
   instance:
-    hostname: localhost
+    prefer-ip-address: true
     lease-expiration-duration-in-seconds: 10
     lease-renewal-interval-in-seconds: 3
   client:
@@ -26,3 +26,11 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

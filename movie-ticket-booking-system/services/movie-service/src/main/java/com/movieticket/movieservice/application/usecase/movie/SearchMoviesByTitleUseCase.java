@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.movie;
 
-import com.movieticket.movieservice.api.dto.response.MovieResponse;
+import com.movieticket.movieservice.application.dto.response.MovieResponse;
 import com.movieticket.movieservice.infrastructure.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +16,7 @@ public class SearchMoviesByTitleUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'search:' + (#p0 == null || #p0.isBlank() ? 'all' : #p0.trim().toLowerCase())")
+    @Cacheable(value = "movies", key = "'search:' + (#p0 == null || #p0.isBlank() ? 'all' : #p0.trim().toLowerCase())", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute(String keyword) {
         if (keyword == null || keyword.isBlank()) {

@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/booking_db
     username: postgres
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -75,9 +75,10 @@ eureka:
 
 app:
   redis:
-    enabled: true
+    embedded:
+      enabled: ${APP_REDIS_EMBEDDED_ENABLED:false}
   kafka:
-    enabled: true
+    enabled: ${APP_KAFKA_ENABLED:true}
     outbox:
       poll-interval: 5000
 
@@ -96,3 +97,11 @@ logging:
     org.hibernate.SQL: DEBUG
     com.netflix.eureka: WARN
     com.netflix.discovery: WARN
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

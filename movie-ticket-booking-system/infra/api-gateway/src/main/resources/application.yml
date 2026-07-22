@@ -5,27 +5,39 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: movie_redis
+      port: 6379
+
   cloud:
     gateway:
       routes:
         - id: user-service-route
           uri: lb://USER-SERVICE
           predicates:
-            - Path=/api/users/**
+            - Path=/api/users/**,/api/auth/**
           filters:
             - StripPrefix=0
 
         - id: movie-service-route
           uri: lb://MOVIE-SERVICE
           predicates:
-            - Path=/api/movies/**
+            - Path=/api/movies/**,/api/actors/**,/api/directors/**,/api/genres/**
           filters:
             - StripPrefix=0
+            # 2. THÊM BỘ ĐẾM RATE LIMITER CHO ROUTE NÀY
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 5
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@keyResolver}"
 
         - id: cinema-service-route
           uri: lb://CINEMA-SERVICE
           predicates:
-            - Path=/api/cinemas/**
+            - Path=/api/cinemas/**,/api/halls/**,/api/seats/**,/api/seat-types/**,/api/hall-maintenances/**
           filters:
             - StripPrefix=0
 
@@ -39,7 +51,14 @@ spring:
         - id: booking-service-route
           uri: lb://BOOKING-SERVICE
           predicates:
-            - Path=/api/bookings/**
+            - Path=/api/bookings/**,/api/admin/booking-settings/**
+          filters:
+            - StripPrefix=0
+
+        - id: notification-service-route
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/v1/**,/ping
           filters:
             - StripPrefix=0
 
@@ -52,6 +71,7 @@ spring:
               - "GET"
               - "POST"
               - "PUT"
+              - "PATCH"
               - "DELETE"
               - "OPTIONS"
             allowed-headers:
@@ -73,6 +93,12 @@ app:
   jwt:
     secret: ${JWT_SECRET}
 management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
   endpoints:
     web:
       exposure:

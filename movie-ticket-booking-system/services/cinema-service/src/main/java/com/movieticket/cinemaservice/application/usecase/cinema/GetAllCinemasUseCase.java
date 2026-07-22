@@ -1,6 +1,6 @@
 package com.movieticket.cinemaservice.application.usecase.cinema;
 
-import com.movieticket.cinemaservice.api.dto.response.CinemaResponse;
+import com.movieticket.cinemaservice.application.dto.response.CinemaResponse;
 import com.movieticket.cinemaservice.domain.enums.CinemaStatus;
 import com.movieticket.cinemaservice.infrastructure.repository.CinemaRepository;
 import lombok.RequiredArgsConstructor;

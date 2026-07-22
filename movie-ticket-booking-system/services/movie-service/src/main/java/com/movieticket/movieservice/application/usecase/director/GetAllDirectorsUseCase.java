@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.director;
 
-import com.movieticket.movieservice.api.dto.response.PersonResponse;
+import com.movieticket.movieservice.application.dto.response.PersonResponse;
 import com.movieticket.movieservice.infrastructure.repository.DirectorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +16,7 @@ public class GetAllDirectorsUseCase {
     private final DirectorRepository directorRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "directors", key = "'all'")
+    @Cacheable(value = "directors", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<PersonResponse> execute() {
         return directorRepository.findAll()

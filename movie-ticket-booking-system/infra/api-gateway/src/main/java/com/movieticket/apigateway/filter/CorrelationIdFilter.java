@@ -6,7 +6,6 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -38,12 +37,22 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
                 .header(HEADER_CORRELATION_ID, finalCorrelationId)
                 .build();
 
+        log.info("[{}] {} {}",
+                finalCorrelationId,
+                newRequest.getMethod(),
+                newRequest.getURI().getPath());
+
+        exchange.getResponse().beforeCommit(() -> {
+            exchange.getResponse().getHeaders().set(HEADER_CORRELATION_ID, finalCorrelationId);
+            return Mono.empty();
+        });
+
+        // Tiếp tục chuỗi filter và chỉ giữ lại phần log trạng thái trong .then()
         return chain.filter(exchange.mutate().request(newRequest).build())
                 .then(Mono.fromRunnable(() -> {
-                    ServerHttpResponse response = exchange.getResponse();
-                    if (!response.isCommitted()) {
-                        response.getHeaders().set(HEADER_CORRELATION_ID, finalCorrelationId);
-                    }
+                    log.info("[{}] {}",
+                            finalCorrelationId,
+                            exchange.getResponse().getStatusCode());
                 }));
     }
 

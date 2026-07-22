@@ -1,6 +1,6 @@
 package com.movieticket.movieservice.application.usecase.movie;
 
-import com.movieticket.movieservice.api.dto.response.MovieResponse;
+import com.movieticket.movieservice.application.dto.response.MovieResponse;
 import com.movieticket.movieservice.infrastructure.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +16,7 @@ public class GetAllMoviesUseCase {
     private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "movies", key = "'all'")
+    @Cacheable(value = "movies", key = "'all'", unless = "#result == null || #result.isEmpty()")
 
     public List<MovieResponse> execute() {
         return movieRepository.findAll()
