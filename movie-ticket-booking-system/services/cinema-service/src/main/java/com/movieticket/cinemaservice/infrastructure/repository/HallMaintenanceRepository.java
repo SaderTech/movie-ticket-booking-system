@@ -26,4 +26,10 @@ public interface HallMaintenanceRepository extends JpaRepository<HallMaintenance
             @Param("endTime") LocalDateTime endTime,
             @Param("cancelledStatus") MaintenanceStatus cancelledStatus
     );
+
+    boolean existsByHall_IdAndStatusAndIdNot(
+            Long hallId,
+            MaintenanceStatus status,
+            Long maintenanceId
+    );
 }
