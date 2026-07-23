@@ -26,6 +26,10 @@ public class BookingContext {
         return username instanceof String ? (String) username : null;
     }
 
+    public String getCurrentUserEmail() {
+        return getCurrentUsername();
+    }
+
     private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null) {

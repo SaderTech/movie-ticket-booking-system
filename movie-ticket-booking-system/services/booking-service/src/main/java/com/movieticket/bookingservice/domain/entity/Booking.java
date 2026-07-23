@@ -36,6 +36,12 @@ public class Booking {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "customer_email", length = 255)
+    private String customerEmail;
+
+    @Column(name = "customer_name", length = 255)
+    private String customerName;
+
     @Column(name = "showtime_id", nullable = false)
     private Long showtimeId;
 

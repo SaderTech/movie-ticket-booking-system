@@ -27,10 +27,12 @@ import java.util.Map;
 public class BookingController {
 
     private final HoldSeatsUseCaseImpl holdSeatsUseCase;
+    private final ReleaseSeatHoldUseCaseImpl releaseSeatHoldUseCase;
     private final ConfirmBookingUseCaseImpl confirmBookingUseCase;
     private final CancelBookingUseCaseImpl cancelBookingUseCase;
     private final GetBookingUseCaseImpl getBookingUseCase;
     private final GetMyBookingsUseCaseImpl getMyBookingsUseCase;
+    private final GetSeatAvailabilityUseCaseImpl getSeatAvailabilityUseCase;
     private final BookingContext bookingContext;
     private final MovieClient movieClient;
 
@@ -78,6 +80,19 @@ public class BookingController {
         HoldSeatsResponse response = holdSeatsUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Seats held successfully", response));
+    }
+
+    @PostMapping("/holds/{holdToken}/release")
+    public ResponseEntity<ApiResponse<Void>> releaseSeatHold(@PathVariable String holdToken) {
+        releaseSeatHoldUseCase.execute(holdToken, getCurrentUserIdOrThrow());
+        return ResponseEntity.ok(ApiResponse.success("Seat hold released", null));
+    }
+
+    @GetMapping("/showtimes/{showtimeId}/seat-availability")
+    public ResponseEntity<ApiResponse<SeatAvailabilityResponse>> getSeatAvailability(
+            @PathVariable Long showtimeId) {
+        getCurrentUserIdOrThrow();
+        return ResponseEntity.ok(ApiResponse.success(getSeatAvailabilityUseCase.findByShowtimeId(showtimeId)));
     }
 
     @PostMapping("/confirm")

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "MOVIE-SERVICE", configuration = FeignClientConfig.class,
-        fallbackFactory = MovieClientFallbackFactory.class)
+        url = "${MOVIE_SERVICE_URL:http://localhost:8082}", fallbackFactory = MovieClientFallbackFactory.class)
 public interface MovieClient {
 
     @GetMapping("/api/movies/demo-receive")

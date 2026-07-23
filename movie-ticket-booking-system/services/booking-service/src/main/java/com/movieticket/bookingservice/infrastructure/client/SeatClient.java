@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 
 @FeignClient(name = "cinema-service", configuration = FeignClientConfig.class,
-        contextId = "seatClient", path = "/api/seats", fallbackFactory = SeatClientFallbackFactory.class)
+        contextId = "seatClient", url = "${CINEMA_SERVICE_URL:http://localhost:8083}", path = "/api/seats",
+        fallbackFactory = SeatClientFallbackFactory.class)
 public interface SeatClient {
 
     @GetMapping

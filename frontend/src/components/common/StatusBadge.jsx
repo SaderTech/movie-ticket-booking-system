@@ -3,7 +3,7 @@ const labels = {
   ACTIVE: 'Hoạt động', INACTIVE: 'Ngừng hoạt động', MAINTENANCE: 'Bảo trì',
   AVAILABLE: 'Còn chỗ', FULL: 'Hết chỗ', CANCELLED: 'Đã hủy',
   HOLDING: 'Đang giữ ghế', PENDING_PAYMENT: 'Chờ thanh toán', CONFIRMED: 'Đã xác nhận', EXPIRED: 'Đã hết hạn', FAILED: 'Thất bại',
-  PAID: 'Đã thanh toán', PENDING: 'Đang chờ', SENT: 'Đã gửi', RETRYING: 'Đang thử lại',
+  PAID: 'Đã thanh toán', PENDING: 'Đang chờ thanh toán', REFUND_PENDING: 'Đang chờ hoàn tiền', SENT: 'Đã gửi', RETRYING: 'Đang thử lại',
   SCHEDULED: 'Đã lên lịch', IN_PROGRESS: 'Đang thực hiện', COMPLETED: 'Hoàn tất',
   BROKEN: 'Hỏng', DISABLED: 'Vô hiệu hóa', USED: 'Đã sử dụng',
 }

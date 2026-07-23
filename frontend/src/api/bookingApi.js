@@ -1,7 +1,9 @@
 import { httpClient, unwrapBooking } from './httpClient'
 
 export const bookingApi = {
+  seatAvailability: (showtimeId) => httpClient.get(`/api/bookings/showtimes/${showtimeId}/seat-availability`).then(unwrapBooking),
   holdSeats: (payload, idempotencyKey) => httpClient.post('/api/bookings/hold-seats', payload, { headers: { 'Idempotency-Key': idempotencyKey } }).then(unwrapBooking),
+  releaseHold: (holdToken) => httpClient.post(`/api/bookings/holds/${holdToken}/release`).then(unwrapBooking),
   confirm: (payload, idempotencyKey) => httpClient.post('/api/bookings/confirm', payload, { headers: { 'Idempotency-Key': idempotencyKey } }).then(unwrapBooking),
   vnpayReturn: (params) => httpClient.get('/api/bookings/vnpay-return', { params }).then(unwrapBooking),
   myBookings: (params) => httpClient.get('/api/bookings/my-bookings', { params }).then(unwrapBooking),

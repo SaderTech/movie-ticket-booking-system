@@ -26,7 +26,7 @@ public class PaymentEventConsumer {
     private final NotificationRecipientResolver recipientResolver;
 
     @KafkaListener(
-            topics = {Constants.TOPIC_PAYMENT_SUCCESS, Constants.TOPIC_PAYMENT_FAILED},
+            topics = {Constants.TOPIC_PAYMENT_SUCCESS, Constants.TOPIC_PAYMENT_FAILED, Constants.TOPIC_PAYMENT_REFUND_REQUIRED},
             groupId = "${spring.kafka.consumer.group-id:notification-service}"
     )
     public void consumePaymentEvent(String message, ConsumerRecord<String, String> record) {
@@ -45,6 +45,20 @@ public class PaymentEventConsumer {
                         "Thanh toán " + paymentCode + " với số tiền " + amount + " đã hoàn tất thành công.",
                         "EMAIL",
                         "PAYMENT_SUCCESS",
+                        sourceEventId,
+                        topic,
+                        null
+                ));
+            } else if (Constants.TOPIC_PAYMENT_REFUND_REQUIRED.equals(topic)) {
+                String bookingCode = text(payload, "bookingCode", "unknown-booking");
+                String reason = text(payload, "reason", "Giao dịch được nhận sau khi phiên giữ ghế đã hết hạn");
+                sendNotificationUseCase.execute(new SendNotificationCommand(
+                        recipientEmail,
+                        "Thông báo hoàn tiền - " + bookingCode,
+                        "Giao dịch " + paymentCode + " cho booking " + bookingCode + " với số tiền " + amount
+                                + " đang được xử lý hoàn tiền. Lý do: " + reason + ".",
+                        "EMAIL",
+                        "PAYMENT_REFUND_REQUIRED",
                         sourceEventId,
                         topic,
                         null

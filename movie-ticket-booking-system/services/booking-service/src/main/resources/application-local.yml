@@ -1,0 +1,14 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+# Use Docker-published ports when Booking Service runs from IntelliJ.
+# Booking still registers with Eureka so API Gateway can reach it.
+services:
+  showtime:
+    url: ${SHOWTIME_SERVICE_URL:http://localhost:8084}
+  cinema:
+    url: ${CINEMA_SERVICE_URL:http://localhost:8083}
+  movie:
+    url: ${MOVIE_SERVICE_URL:http://localhost:8082}

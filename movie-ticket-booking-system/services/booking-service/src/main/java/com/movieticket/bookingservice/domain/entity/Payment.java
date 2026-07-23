@@ -88,6 +88,19 @@ public class Payment {
         updatedAt = LocalDateTime.now();
     }
 
+    public void markRefundPending(String reason) {
+        if (status == PaymentStatus.REFUND_PENDING) {
+            return;
+        }
+        if (status != PaymentStatus.PENDING) {
+            throw new IllegalStateException("Only pending payment can be marked for refund, current: " + status);
+        }
+        status = PaymentStatus.REFUND_PENDING;
+        paidAt = LocalDateTime.now();
+        failureReason = reason;
+        updatedAt = LocalDateTime.now();
+    }
+
     public void setVnPayDetails(String vnpTransactionNo, String rawResponse) {
         this.vnpTransactionNo = vnpTransactionNo;
         this.rawResponse = rawResponse;

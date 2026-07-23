@@ -87,9 +87,9 @@ class ConfirmBookingUseCaseImplTest {
                         throw new RuntimeException(e);
                 }
                 lenient().when(confirmLock.isHeldByCurrentThread()).thenReturn(true);
-                lenient().when(bookingSettingRepository.findBySettingKey("default_ticket_price"))
-                                .thenReturn(Optional.of(BookingSetting.builder().settingKey("default_ticket_price")
-                                                .settingValue("90000").build()));
+                lenient().when(showtimeClient.getShowtime(1L)).thenReturn(new ShowtimeResponse(
+                                1L, 1L, 1L, 1L, java.time.LocalDate.now(), java.time.LocalTime.now(),
+                                java.time.LocalTime.now().plusHours(2), BigDecimal.valueOf(120000), null, null));
                 try {
                         Field selfField = ConfirmBookingUseCaseImpl.class.getDeclaredField("self");
                         selfField.setAccessible(true);
@@ -361,6 +361,54 @@ class ConfirmBookingUseCaseImplTest {
                 assertEquals("CONFIRMED", response.getStatus());
                 assertEquals(PaymentStatus.PAID, payment.getStatus());
                 verify(ticketRepository, times(1)).saveAll(anyList());
+                @SuppressWarnings("unchecked")
+                ArgumentCaptor<List<Ticket>> ticketsCaptor = ArgumentCaptor.forClass(List.class);
+                verify(ticketRepository).saveAll(ticketsCaptor.capture());
+                assertEquals("Phòng chiếu 1", ticketsCaptor.getValue().get(0).getHallName());
+        }
+
+        @Test
+        void handleVnPayReturn_LateSuccessfulPaymentMarksRefundPendingAndReleasesBooking() {
+                Map<String, String> params = new HashMap<>();
+                params.put("vnp_TxnRef", "TXN_LATE_PAYMENT");
+                params.put("vnp_ResponseCode", "00");
+                params.put("vnp_TransactionStatus", "00");
+                params.put("vnp_SecureHash", "valid");
+                when(paymentAdapter.verifyReturn(params)).thenReturn(true);
+
+                Payment payment = Payment.builder()
+                                .id(1L).bookingId(1L).transactionRef("TXN_LATE_PAYMENT")
+                                .method("VNPAY").amount(BigDecimal.valueOf(180000))
+                                .status(PaymentStatus.PENDING).build();
+                BookingSeat seat = BookingSeat.builder().seatCode("A1").price(BigDecimal.valueOf(90000))
+                                .status(BookingSeatStatus.PENDING).build();
+                Booking booking = Booking.builder()
+                                .id(1L).bookingCode("BK_LATE").userId(1L).showtimeId(1L)
+                                .totalAmount(BigDecimal.valueOf(180000)).status(BookingStatus.PENDING_PAYMENT)
+                                .holdToken("HOLD_LATE").seats(List.of(seat)).build();
+                SeatHold expiredHold = SeatHold.builder()
+                                .id(1L).holdToken("HOLD_LATE").userId(1L).showtimeId(1L)
+                                .status(SeatHoldStatus.EXPIRED).expiresAt(LocalDateTime.now().minusMinutes(1))
+                                .seats(List.of()).build();
+                SagaTransaction saga = SagaTransaction.builder()
+                                .id(1L).bookingId(1L).sagaId("SAGA_LATE").status(SagaStatus.STARTED).build();
+
+                when(paymentRepository.findByTransactionRef("TXN_LATE_PAYMENT")).thenReturn(Optional.of(payment));
+                when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+                when(seatHoldRepository.findByHoldToken("HOLD_LATE")).thenReturn(Optional.of(expiredHold));
+                when(sagaTransactionRepository.findByBookingId(1L)).thenReturn(Optional.of(saga));
+                when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+                when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+                when(seatHoldRepository.save(any(SeatHold.class))).thenAnswer(invocation -> invocation.getArgument(0));
+                when(sagaTransactionRepository.save(any(SagaTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+                BookingResponse response = useCase.handleVnPayReturn(params);
+
+                assertEquals("FAILED", response.getStatus());
+                assertEquals(PaymentStatus.REFUND_PENDING, payment.getStatus());
+                assertEquals(BookingSeatStatus.CANCELLED, seat.getStatus());
+                assertEquals(SagaStatus.COMPENSATED, saga.getStatus());
+                verify(domainEventPublisher).publishAll(argThat(events -> events.size() == 2));
         }
 
         @Test
@@ -444,8 +492,11 @@ class ConfirmBookingUseCaseImplTest {
                 when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
                 when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-                assertThrows(ApiException.class, () -> useCase.handleVnPayReturn(params));
+                BookingResponse response = useCase.handleVnPayReturn(params);
+                assertEquals("FAILED", response.getStatus());
                 assertEquals(PaymentStatus.FAILED, payment.getStatus());
+                assertEquals(BookingStatus.FAILED, booking.getStatus());
+                assertEquals(BookingSeatStatus.CANCELLED, seat.getStatus());
         }
 
         @Test

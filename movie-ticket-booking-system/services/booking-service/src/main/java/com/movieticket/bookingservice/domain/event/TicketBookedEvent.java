@@ -9,6 +9,8 @@ public record TicketBookedEvent(
         String eventId,
         String bookingCode,
         Long userId,
+        String customerEmail,
+        String customerName,
         Long showtimeId,
         BigDecimal totalAmount,
         List<TicketInfo> tickets,
@@ -17,7 +19,13 @@ public record TicketBookedEvent(
 
     public TicketBookedEvent(String bookingCode, Long userId, Long showtimeId,
                              BigDecimal totalAmount, List<TicketInfo> tickets) {
-        this(UUID.randomUUID().toString(), bookingCode, userId, showtimeId,
+        this(UUID.randomUUID().toString(), bookingCode, userId, null, null, showtimeId,
+                totalAmount, tickets, LocalDateTime.now());
+    }
+
+    public TicketBookedEvent(String bookingCode, Long userId, String customerEmail, String customerName,
+                             Long showtimeId, BigDecimal totalAmount, List<TicketInfo> tickets) {
+        this(UUID.randomUUID().toString(), bookingCode, userId, customerEmail, customerName, showtimeId,
                 totalAmount, tickets, LocalDateTime.now());
     }
 

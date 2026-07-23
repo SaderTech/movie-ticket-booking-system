@@ -59,6 +59,10 @@ public class DomainEventPublisherImpl {
                 aggregateType = "BOOKING";
                 topic = "booking.cancelled";
             }
+            case "PAYMENT_REFUND_REQUIRED" -> {
+                aggregateType = "PAYMENT";
+                topic = "booking.payment.refund-required";
+            }
             default -> {
                 log.warn("Unknown domain event type: {}, falling back to generic", event.eventType());
                 aggregateType = "UNKNOWN";
