@@ -1,6 +1,6 @@
 import { LoaderCircle } from 'lucide-react'
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { PageTransition } from '../components/common/Motion'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -43,8 +43,7 @@ function RouteFallback() {
 }
 
 export function AppRoutes() {
-  const location = useLocation()
-  return <Suspense fallback={<RouteFallback />}><PageTransition key={location.pathname}><Routes location={location}>
+  return <Suspense fallback={<RouteFallback />}><PageTransition><Routes>
     <Route element={<PublicLayout />}>
       <Route index element={<HomePage />} />
       <Route path="movies" element={<MoviesPage />} />
