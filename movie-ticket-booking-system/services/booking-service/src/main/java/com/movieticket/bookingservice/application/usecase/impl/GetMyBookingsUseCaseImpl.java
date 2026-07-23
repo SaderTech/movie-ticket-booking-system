@@ -4,8 +4,10 @@ import com.movieticket.bookingservice.api.dto.BookingResponse;
 import com.movieticket.bookingservice.api.dto.PagedResponse;
 import com.movieticket.bookingservice.application.mapper.BookingResponseMapper;
 import com.movieticket.bookingservice.domain.entity.Booking;
+import com.movieticket.bookingservice.domain.entity.Payment;
 import com.movieticket.bookingservice.domain.entity.Ticket;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaPaymentRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,7 @@ public class GetMyBookingsUseCaseImpl {
 
     private final JpaBookingRepository bookingRepository;
     private final JpaTicketRepository ticketRepository;
+    private final JpaPaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public PagedResponse<BookingResponse> findByUserId(Long userId, int page, int size) {
@@ -32,7 +35,8 @@ public class GetMyBookingsUseCaseImpl {
         List<BookingResponse> items = bookingPage.getContent().stream()
                 .map(b -> {
                     List<Ticket> tickets = ticketRepository.findByBookingId(b.getId());
-                    return BookingResponseMapper.toResponse(b, tickets);
+                    Payment payment = paymentRepository.findByBookingId(b.getId()).orElse(null);
+                    return BookingResponseMapper.toResponse(b, tickets, payment);
                 })
                 .collect(Collectors.toList());
 

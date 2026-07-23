@@ -51,12 +51,28 @@ class VnPayUtilTest {
         params.put("vnp_TransactionStatus", "00");
 
         String hashData = params.entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
+                .map(e -> e.getKey() + "=" + java.net.URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
                 .collect(Collectors.joining("&"));
         String expectedHash = hmacSha512(HASH_SECRET, hashData);
         params.put("vnp_SecureHash", expectedHash);
 
         assertTrue(VnPayUtil.verifyReturn(HASH_SECRET, params));
+    }
+
+    @Test
+    void buildPaymentUrl_signsUrlEncodedValues() {
+        String paymentUrl = VnPayUtil.buildPaymentUrl(
+                VNP_URL, TMN_CODE, HASH_SECRET,
+                "TXN_ENCODED", 180000L, "Thanh toan ve xem phim",
+                RETURN_URL, IP_ADDRESS);
+
+        Map<String, String> params = parseQueryParams(paymentUrl);
+        String secureHash = params.remove("vnp_SecureHash");
+        String hashData = new TreeMap<>(params).entrySet().stream()
+                .map(e -> e.getKey() + "=" + java.net.URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                .collect(Collectors.joining("&"));
+
+        assertEquals(hmacSha512(HASH_SECRET, hashData), secureHash);
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaPaymentRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ class GetBookingUseCaseImplTest {
 
     @Mock private JpaBookingRepository bookingRepository;
     @Mock private JpaTicketRepository ticketRepository;
+    @Mock private JpaPaymentRepository paymentRepository;
 
     @InjectMocks
     private GetBookingUseCaseImpl useCase;
@@ -45,6 +47,7 @@ class GetBookingUseCaseImplTest {
                 .build();
         when(bookingRepository.findByBookingCode("BK_OK")).thenReturn(Optional.of(booking));
         when(ticketRepository.findByBookingId(1L)).thenReturn(List.of());
+        when(paymentRepository.findByBookingId(1L)).thenReturn(Optional.empty());
 
         BookingResponse response = useCase.findByBookingCode("BK_OK", 1L);
         assertNotNull(response);

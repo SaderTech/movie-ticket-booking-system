@@ -69,6 +69,15 @@ public class KafkaConfig {
 
     @Bean
     @ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true", matchIfMissing = false)
+    public NewTopic paymentRefundRequiredTopic() {
+        return TopicBuilder.name("booking.payment.refund-required")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true", matchIfMissing = false)
     public ProducerFactory<String, String> stringProducerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);

@@ -15,4 +15,7 @@ public interface JpaSeatHoldRepository extends JpaRepository<SeatHold, Long> {
 
     @Query("SELECT COUNT(h) > 0 FROM SeatHold h JOIN h.seats s WHERE h.showtimeId = :showtimeId AND s.seatCode = :seatCode AND h.status = 'ACTIVE' AND h.expiresAt > :now")
     boolean existsActiveHoldForSeat(Long showtimeId, String seatCode, LocalDateTime now);
+
+    @Query("SELECT s.seatCode FROM SeatHold h JOIN h.seats s WHERE h.showtimeId = :showtimeId AND h.status = 'ACTIVE' AND h.expiresAt > :now")
+    List<String> findActiveSeatCodesByShowtimeId(Long showtimeId, LocalDateTime now);
 }

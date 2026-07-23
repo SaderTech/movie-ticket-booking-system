@@ -11,6 +11,7 @@ public final class Constants {
     public static final String TOPIC_SEAT_HOLD_EXPIRED = "booking.seat-hold.expired";
     public static final String TOPIC_PAYMENT_SUCCESS = "payment.success";
     public static final String TOPIC_PAYMENT_FAILED = "payment.failed";
+    public static final String TOPIC_PAYMENT_REFUND_REQUIRED = "booking.payment.refund-required";
     public static final String TOPIC_SHOWTIME_REMINDER = "notification.showtime-reminder";
 
     public static final String DEFAULT_CHANNEL = "EMAIL";

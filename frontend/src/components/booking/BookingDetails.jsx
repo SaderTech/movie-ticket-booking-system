@@ -19,7 +19,7 @@ export function BookingDetails({ booking, showtime, movie, cinema }) {
           <div><span>Suất chiếu</span><strong>{showtime ? `${formatDate(showtime.showDate)} · ${formatTime(showtime.startTime)}` : displayValue(tickets[0]?.showDate && `${formatDate(tickets[0].showDate)} · ${formatTime(tickets[0].startTime)}`)}</strong></div>
           <div><span>Ghế</span><strong>{(booking.seats || []).map((seat) => seat.seatCode).join(', ') || tickets.map((ticket) => ticket.seatCode).join(', ') || 'Chưa cập nhật'}</strong></div>
           <div><span>Tổng tiền chính thức</span><strong className="price-text">{formatCurrency(booking.totalAmount)}</strong></div>
-          <div><span>Thanh toán</span><strong>{booking.payment ? `${booking.payment.method || '—'} · ${booking.payment.status || '—'}` : 'Chưa cập nhật'}</strong></div>
+          <div><span>Thanh toán</span><strong>{booking.payment ? <span className="inline-status">{booking.payment.method || '—'} <StatusBadge value={booking.payment.status} /></span> : 'Chưa cập nhật'}</strong></div>
           <div><span>Thời gian tạo</span><strong>{formatDateTime(booking.createdAt)}</strong></div>
         </div>
         <div className="form-actions ticket-actions"><Link className="button button-secondary" to="/account/bookings">Quay lại lịch sử</Link><button type="button" className="button button-primary" onClick={() => window.print()}><Printer /> In vé</button><Link className="button button-ghost" to="/"><Home /> Trang chủ</Link></div>

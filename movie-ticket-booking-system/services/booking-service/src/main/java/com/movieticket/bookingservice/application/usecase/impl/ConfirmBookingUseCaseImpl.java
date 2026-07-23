@@ -8,6 +8,8 @@ import com.movieticket.bookingservice.application.mapper.BookingResponseMapper;
 import com.movieticket.bookingservice.domain.aggregate.BookingAggregate;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
+import com.movieticket.bookingservice.domain.event.BookingCancelledEvent;
+import com.movieticket.bookingservice.domain.event.PaymentRefundRequiredEvent;
 import com.movieticket.bookingservice.domain.vo.BookingCode;
 import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
 import com.movieticket.bookingservice.infrastructure.adapter.VnPayUtil;
@@ -21,6 +23,7 @@ import com.movieticket.bookingservice.infrastructure.client.dto.SeatResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.ShowtimeResponse;
 import com.movieticket.bookingservice.infrastructure.jpa.*;
 import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
+import com.movieticket.bookingservice.infrastructure.security.BookingContext;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,12 +71,11 @@ public class ConfirmBookingUseCaseImpl {
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
     private final JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    private final BookingContext bookingContext;
 
-    private static final String SETTING_TICKET_PRICE = "default_ticket_price";
     private static final String SETTING_LOCK_WAIT = "lock_wait_time_seconds";
     private static final String SETTING_LOCK_LEASE = "lock_lease_time_seconds";
     private static final String SETTING_HOLD_PAYMENT_EXTENSION = "hold_payment_extension_minutes";
-    private static final int DEFAULT_TICKET_PRICE = 90000;
     private static final int DEFAULT_LOCK_WAIT = 2;
     private static final int DEFAULT_LOCK_LEASE = 10;
     private static final int DEFAULT_HOLD_PAYMENT_EXTENSION = 30;
@@ -143,8 +145,9 @@ public class ConfirmBookingUseCaseImpl {
                     "Seat hold has expired or is not active (status: " + seatHold.getStatus() + ")");
         }
 
+        ShowtimeResponse showtime = getShowtimeForPricing(seatHold.getShowtimeId());
         BookingCode bookingCode = BookingCode.generate();
-        BigDecimal ticketPrice = BigDecimal.valueOf(getIntSetting(SETTING_TICKET_PRICE, DEFAULT_TICKET_PRICE));
+        BigDecimal ticketPrice = showtime.price();
         BigDecimal totalAmount = seatHold.getSeats().stream()
                 .map(shSeat -> ticketPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -165,9 +168,14 @@ public class ConfirmBookingUseCaseImpl {
                 })
                 .collect(Collectors.toList());
 
+        String customerEmail = bookingContext != null ? bookingContext.getCurrentUserEmail() : null;
+        String customerName = displayNameFromEmail(customerEmail);
+
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode.value())
                 .userId(command.getUserId())
+                .customerEmail(customerEmail)
+                .customerName(customerName)
                 .showtimeId(seatHold.getShowtimeId())
                 .totalAmount(totalAmount)
                 .status(BookingStatus.PENDING_PAYMENT)
@@ -221,6 +229,23 @@ public class ConfirmBookingUseCaseImpl {
         return response;
     }
 
+    private ShowtimeResponse getShowtimeForPricing(Long showtimeId) {
+        try {
+            ShowtimeResponse showtime = showtimeClient.getShowtime(showtimeId);
+            if (showtime == null || showtime.price() == null || showtime.price().signum() <= 0) {
+                throw new ApiException(ErrorCode.INVALID_REQUEST,
+                        "Showtime " + showtimeId + " does not have a valid ticket price");
+            }
+            return showtime;
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Could not load ticket price for showtime {}: {}", showtimeId, e.getMessage());
+            throw new ApiException(ErrorCode.INTERNAL_ERROR,
+                    "Could not determine ticket price for the selected showtime");
+        }
+    }
+
     public BookingResponse handleVnPayReturn(Map<String, String> vnpayParams) {
         if (!paymentAdapter.verifyReturn(vnpayParams)) {
             log.warn("VNPay return hash verification failed");
@@ -270,6 +295,11 @@ public class ConfirmBookingUseCaseImpl {
                 .orElseThrow(() -> new ApiException(ErrorCode.BOOKING_NOT_FOUND,
                         "Booking not found for payment: " + txnRef));
 
+        if (payment.getStatus() == PaymentStatus.REFUND_PENDING) {
+            log.info("Late payment {} was already marked for refund", txnRef);
+            return BookingResponseMapper.toResponse(booking, List.of(), payment);
+        }
+
         try {
             String rawJson = objectMapper.writeValueAsString(vnpayParams);
             payment.setVnPayDetails(vnpayParams.get("vnp_TransactionNo"), rawJson);
@@ -304,6 +334,14 @@ public class ConfirmBookingUseCaseImpl {
         }
 
         if ("00".equals(responseCode)) {
+            String bookingHoldToken = booking.getHoldToken();
+            SeatHold currentHold = seatHoldRepository.findByHoldToken(bookingHoldToken)
+                    .orElseThrow(() -> new ApiException(ErrorCode.HOLD_NOT_FOUND,
+                            "Seat hold not found: " + bookingHoldToken));
+            if (!currentHold.isActive()) {
+                return compensateLatePayment(payment, booking, currentHold, txnRef);
+            }
+
             final Long bkId = booking.getId();
             final Long bkUserId = booking.getUserId();
             final Long bkShowtimeId = booking.getShowtimeId();
@@ -311,7 +349,10 @@ public class ConfirmBookingUseCaseImpl {
             Long movieId = null;
             Long cinemaId = null;
             Long hallId = null;
-            String hallName = null;
+            // Showtime only supplies the room id.  Tickets.hall_name is NOT NULL in
+            // the database, so always provide a stable display value even when the
+            // cinema service cannot be reached to enrich the room details.
+            String hallName = "Phòng chiếu";
             LocalDate showDate;
             LocalTime startTime;
             LocalTime endTime;
@@ -320,6 +361,9 @@ public class ConfirmBookingUseCaseImpl {
                 movieId = showtimeData.movieId();
                 cinemaId = showtimeData.cinemaId();
                 hallId = showtimeData.roomId();
+                if (hallId != null) {
+                    hallName = "Phòng chiếu " + hallId;
+                }
                 showDate = showtimeData.showDate();
                 startTime = showtimeData.startTime();
                 endTime = showtimeData.endTime();
@@ -463,9 +507,44 @@ public class ConfirmBookingUseCaseImpl {
             domainEventPublisher.publishAll(aggregate.getDomainEvents());
             aggregate.clearDomainEvents();
 
-            throw new ApiException(ErrorCode.PAYMENT_FAILED,
-                    "VNPay payment failed: " + errorDesc);
+            // Do not throw here: ApiException is a runtime exception and would
+            // roll back the compensation that has just released the hold.
+            return BookingResponseMapper.toResponse(booking, List.of(), payment);
         }
+    }
+
+    private BookingResponse compensateLatePayment(Payment payment, Booking booking, SeatHold seatHold, String txnRef) {
+        String reason = "Payment received after seat hold expiration";
+        payment.markRefundPending(reason);
+        booking.fail(reason);
+        seatHold.release();
+
+        SagaTransaction saga = sagaTransactionRepository.findByBookingId(booking.getId()).orElse(null);
+        if (saga != null) {
+            saga.startCompensation();
+            saga.compensate();
+            sagaTransactionRepository.save(saga);
+        }
+
+        paymentRepository.save(payment);
+        bookingRepository.save(booking);
+        seatHoldRepository.save(seatHold);
+        domainEventPublisher.publishAll(List.of(
+                new BookingCancelledEvent(booking.getBookingCode(), booking.getUserId(), reason),
+                new PaymentRefundRequiredEvent(txnRef, booking.getBookingCode(), booking.getUserId(),
+                        booking.getCustomerEmail(), booking.getCustomerName(), payment.getAmount(), reason)
+        ));
+
+        log.warn("Late VNPay payment {} marked REFUND_PENDING for booking {}", txnRef, booking.getBookingCode());
+        return BookingResponseMapper.toResponse(booking, List.of(), payment);
+    }
+
+    private String displayNameFromEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        int atIndex = email.indexOf('@');
+        return atIndex > 0 ? email.substring(0, atIndex) : email;
     }
 
     private Map<String, String> fetchSeatTypeMap(Long showtimeId) {

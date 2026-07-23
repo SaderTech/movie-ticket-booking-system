@@ -1,11 +1,18 @@
 package com.movieticket.bookingservice.infrastructure.scheduler;
 
+import com.movieticket.bookingservice.domain.entity.Booking;
 import com.movieticket.bookingservice.domain.entity.BookingEventOutbox;
+import com.movieticket.bookingservice.domain.entity.SagaTransaction;
 import com.movieticket.bookingservice.domain.entity.SeatHold;
+import com.movieticket.bookingservice.domain.enums.BookingStatus;
 import com.movieticket.bookingservice.domain.enums.OutboxStatus;
 import com.movieticket.bookingservice.domain.enums.SeatHoldStatus;
+import com.movieticket.bookingservice.domain.event.BookingCancelledEvent;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingEventOutboxRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaSagaTransactionRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaSeatHoldRepository;
+import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -30,6 +37,9 @@ public class ExpiredHoldScheduler {
 
     private final JpaSeatHoldRepository seatHoldRepository;
     private final JpaBookingEventOutboxRepository outboxRepository;
+    private final JpaBookingRepository bookingRepository;
+    private final JpaSagaTransactionRepository sagaTransactionRepository;
+    private final DomainEventPublisherImpl domainEventPublisher;
     private final RedissonClient redissonClient;
 
     @Lazy
@@ -94,6 +104,10 @@ public class ExpiredHoldScheduler {
         hold.expire();
         seatHoldRepository.save(hold);
 
+        bookingRepository.findByHoldToken(hold.getHoldToken())
+                .filter(booking -> booking.getStatus() == BookingStatus.PENDING_PAYMENT)
+                .ifPresent(booking -> expirePendingBooking(booking, hold));
+
         String seatCodesJson = hold.getSeats().stream()
                 .map(s -> "\"" + s.getSeatCode() + "\"")
                 .collect(Collectors.joining(",", "[", "]"));
@@ -112,5 +126,21 @@ public class ExpiredHoldScheduler {
                 .retryCount(0)
                 .build();
         outboxRepository.save(outbox);
+    }
+
+    private void expirePendingBooking(Booking booking, SeatHold hold) {
+        String reason = "Seat hold expired before payment was completed";
+        booking.fail(reason);
+        bookingRepository.save(booking);
+
+        sagaTransactionRepository.findByBookingId(booking.getId()).ifPresent(saga -> {
+            saga.startCompensation();
+            saga.compensate();
+            sagaTransactionRepository.save(saga);
+        });
+
+        domainEventPublisher.publish(new BookingCancelledEvent(
+                booking.getBookingCode(), booking.getUserId(), reason));
+        log.info("Cancelled pending booking {} after hold {} expired", booking.getBookingCode(), hold.getHoldToken());
     }
 }

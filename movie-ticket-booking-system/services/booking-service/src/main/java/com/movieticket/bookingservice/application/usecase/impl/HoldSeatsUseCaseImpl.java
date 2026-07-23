@@ -70,7 +70,7 @@ public class HoldSeatsUseCaseImpl {
     private static final String SETTING_LOCK_LEASE = "lock_lease_time_seconds";
     private static final String LOCK_KEY_PREFIX = "lock:showtime:%d:seat:%s";
 
-    private static final int DEFAULT_HOLD_TTL = 5;
+    private static final int DEFAULT_HOLD_TTL = 3;
     private static final int DEFAULT_MAX_SEATS = 8;
     private static final int DEFAULT_LOCK_WAIT = 2;
     private static final int DEFAULT_LOCK_LEASE = 10;

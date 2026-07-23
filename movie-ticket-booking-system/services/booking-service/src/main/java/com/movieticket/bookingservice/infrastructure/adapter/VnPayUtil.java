@@ -57,14 +57,14 @@ public class VnPayUtil {
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
 
         String hashData = params.entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
+                .map(e -> e.getKey() + "=" + urlEncode(e.getValue()))
                 .collect(Collectors.joining("&"));
 
         String secureHash = hmacSha512(hashSecret, hashData);
         params.put("vnp_SecureHash", secureHash);
 
         String query = params.entrySet().stream()
-                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                .map(e -> urlEncode(e.getKey()) + "=" + urlEncode(e.getValue()))
                 .collect(Collectors.joining("&"));
 
         return vnpUrl + "?" + query;
@@ -76,9 +76,11 @@ public class VnPayUtil {
 
         Map<String, String> sortedParams = new TreeMap<>(params);
         sortedParams.remove("vnp_SecureHash");
+        sortedParams.remove("vnp_SecureHashType");
 
         String hashData = sortedParams.entrySet().stream()
-                .map(e -> e.getKey() + "=" + (e.getValue() != null ? e.getValue() : ""))
+                .filter(e -> e.getValue() != null && !e.getValue().isEmpty())
+                .map(e -> e.getKey() + "=" + urlEncode(e.getValue()))
                 .collect(Collectors.joining("&"));
 
         String computedHash = hmacSha512(hashSecret, hashData);
@@ -99,5 +101,9 @@ public class VnPayUtil {
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException("HMAC SHA512 error", e);
         }
+    }
+
+    private static String urlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

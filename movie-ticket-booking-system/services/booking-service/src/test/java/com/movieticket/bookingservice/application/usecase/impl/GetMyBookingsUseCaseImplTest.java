@@ -5,6 +5,7 @@ import com.movieticket.bookingservice.api.dto.PagedResponse;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaPaymentRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ class GetMyBookingsUseCaseImplTest {
 
     @Mock private JpaBookingRepository bookingRepository;
     @Mock private JpaTicketRepository ticketRepository;
+    @Mock private JpaPaymentRepository paymentRepository;
 
     @InjectMocks
     private GetMyBookingsUseCaseImpl useCase;
@@ -57,6 +59,7 @@ class GetMyBookingsUseCaseImplTest {
                 .build();
         when(bookingRepository.findByUserId(eq(1L), any(PageRequest.class))).thenReturn(new PageImpl<>(List.of(booking)));
         when(ticketRepository.findByBookingId(1L)).thenReturn(List.of());
+        when(paymentRepository.findByBookingId(1L)).thenReturn(java.util.Optional.empty());
 
         PagedResponse<BookingResponse> response = useCase.findByUserId(1L, 0, 10);
 

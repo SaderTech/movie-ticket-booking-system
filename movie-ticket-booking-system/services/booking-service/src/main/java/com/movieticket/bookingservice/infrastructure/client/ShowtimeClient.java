@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "showtime-service", configuration = FeignClientConfig.class,
-        path = "/api/showtimes", fallbackFactory = ShowtimeClientFallbackFactory.class)
+        url = "${SHOWTIME_SERVICE_URL:http://localhost:8084}", path = "/api/showtimes",
+        fallbackFactory = ShowtimeClientFallbackFactory.class)
 public interface ShowtimeClient {
 
     @GetMapping("/{id}")

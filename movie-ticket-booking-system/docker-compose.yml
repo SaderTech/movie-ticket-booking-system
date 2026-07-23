@@ -413,6 +413,9 @@ services:
 
     container_name: movie_showtime
 
+    ports:
+      - "8084:8084"
+
     environment:
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
 
@@ -455,10 +458,14 @@ services:
       context: .
       dockerfile: services/booking-service/Dockerfile
 
+    # Nạp các secret/cấu hình dùng chung từ file .env ở thư mục gốc repository.
+    env_file:
+      - ../.env
+
     container_name: movie_booking
 
     ports:
-      - "8085:8085"
+      - "${BOOKING_SERVER_PORT:-8085}:8085"
 
     environment:
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
@@ -469,15 +476,10 @@ services:
       ZIPKIN_ENDPOINT: >-
         http://zipkin:9411/api/v2/spans
 
-      JWT_SECRET: ${JWT_SECRET}
-
-      DB_PASSWORD: ${DB_PASSWORD}
-
       SPRING_DATASOURCE_URL: >-
         jdbc:postgresql://postgres-db:5432/booking_db
 
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
 
       # Schema Booking đã được init.sql tạo.
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
@@ -489,15 +491,13 @@ services:
       SPRING_DATA_REDIS_HOST: redis-cache
       SPRING_DATA_REDIS_PORT: 6379
 
+      SHOWTIME_SERVICE_URL: http://showtime-service:8084
+      CINEMA_SERVICE_URL: http://cinema-service:8083
+      MOVIE_SERVICE_URL: http://movie-service:8082
+
       APP_REDIS_EMBEDDED_ENABLED: "false"
       APP_KAFKA_ENABLED: "true"
 
-      VNP_TMN_CODE: ${VNP_TMN_CODE:-TU8GEVIB}
-      VNP_HASH_SECRET: ${VNP_HASH_SECRET}
-      VNP_RETURN_URL: >-
-        http://localhost:8085/api/bookings/vnpay-return
-
-      VNP_ALLOWED_RETURN_HOSTS: localhost,127.0.0.1
 
     depends_on:
       postgres-db:

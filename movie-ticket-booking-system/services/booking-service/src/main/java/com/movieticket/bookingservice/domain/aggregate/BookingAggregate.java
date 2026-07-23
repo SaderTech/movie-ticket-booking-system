@@ -58,10 +58,10 @@ public class BookingAggregate {
         saga.complete();
 
         domainEvents.add(new BookingConfirmedEvent(
-                booking.getBookingCode(), booking.getUserId(), booking.getShowtimeId(),
+                booking.getBookingCode(), booking.getUserId(), booking.getCustomerEmail(), booking.getCustomerName(), booking.getShowtimeId(),
                 booking.getTotalAmount(), payment.getMethod()));
         domainEvents.add(new TicketBookedEvent(
-                booking.getBookingCode(), booking.getUserId(), booking.getShowtimeId(),
+                booking.getBookingCode(), booking.getUserId(), booking.getCustomerEmail(), booking.getCustomerName(), booking.getShowtimeId(),
                 booking.getTotalAmount(),
                 tickets.stream()
                         .map(t -> new TicketBookedEvent.TicketInfo(t.getTicketCode(), t.getSeatCode()))

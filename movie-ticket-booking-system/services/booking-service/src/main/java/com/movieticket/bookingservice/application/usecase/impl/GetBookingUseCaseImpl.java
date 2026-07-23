@@ -5,8 +5,10 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.application.mapper.BookingResponseMapper;
 import com.movieticket.bookingservice.domain.entity.Booking;
+import com.movieticket.bookingservice.domain.entity.Payment;
 import com.movieticket.bookingservice.domain.entity.Ticket;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaPaymentRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class GetBookingUseCaseImpl {
 
     private final JpaBookingRepository bookingRepository;
     private final JpaTicketRepository ticketRepository;
+    private final JpaPaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public BookingResponse findByBookingCode(String bookingCode, Long userId) {
@@ -33,6 +36,7 @@ public class GetBookingUseCaseImpl {
                     "You can only view your own bookings");
         }
         List<Ticket> tickets = ticketRepository.findByBookingId(booking.getId());
-        return BookingResponseMapper.toResponse(booking, tickets);
+        Payment payment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
+        return BookingResponseMapper.toResponse(booking, tickets, payment);
     }
 }
