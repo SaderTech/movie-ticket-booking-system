@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
+
 @Configuration
 public class RedissonConfig {
 
@@ -16,16 +18,18 @@ public class RedissonConfig {
     @Value("${spring.data.redis.port:6379}")
     private int redisPort;
 
-    @Value("${spring.data.redis.timeout:3000}")
-    private int redisTimeout;
+    @Value("${spring.data.redis.timeout:3s}")
+    private Duration redisTimeout;
 
     @Bean
     public RedissonClient redissonClient() {
+        int redisTimeoutMillis = Math.toIntExact(redisTimeout.toMillis());
+
         Config config = new Config();
         config.useSingleServer()
                 .setAddress("redis://" + redisHost + ":" + redisPort)
-                .setConnectTimeout(redisTimeout)
-                .setTimeout(redisTimeout)
+                .setConnectTimeout(redisTimeoutMillis)
+                .setTimeout(redisTimeoutMillis)
                 .setRetryAttempts(1)
                 .setRetryInterval(1000);
         return Redisson.create(config);

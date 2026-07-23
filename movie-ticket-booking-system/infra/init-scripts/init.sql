@@ -1433,6 +1433,7 @@ CREATE TABLE public.seat_hold_seats
     hold_id     BIGINT NOT NULL,
     showtime_id BIGINT NOT NULL,
     seat_code   VARCHAR(20) NOT NULL,
+    seat_type   VARCHAR(30),
     created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_seat_hold_seats_hold
@@ -1501,6 +1502,7 @@ CREATE TABLE public.tickets
     showtime_id  BIGINT NOT NULL,
     movie_id     BIGINT NOT NULL,
     movie_title  VARCHAR(255) NOT NULL,
+    movie_poster_url VARCHAR(500),
     cinema_id    BIGINT NOT NULL,
     cinema_name  VARCHAR(255) NOT NULL,
     hall_id      BIGINT NOT NULL,
@@ -1537,6 +1539,8 @@ CREATE TABLE public.payments
     amount          NUMERIC(12,2) NOT NULL,
     status          VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     failure_reason  VARCHAR(255),
+    vnp_transaction_no VARCHAR(50),
+    raw_response    TEXT,
     paid_at         TIMESTAMP WITHOUT TIME ZONE,
     created_at      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -1581,8 +1585,9 @@ CREATE TABLE public.booking_event_outbox
     payload_json   TEXT NOT NULL,
     status         VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     retry_count    INTEGER NOT NULL DEFAULT 0,
+    last_error     TEXT,
     created_at     TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    processed_at   TIMESTAMP WITHOUT TIME ZONE
+    published_at   TIMESTAMP WITHOUT TIME ZONE
 );
 
 
@@ -2109,7 +2114,7 @@ INSERT INTO public.booking_event_outbox
     status,
     retry_count,
     created_at,
-    processed_at
+    published_at
 )
 VALUES
     (
