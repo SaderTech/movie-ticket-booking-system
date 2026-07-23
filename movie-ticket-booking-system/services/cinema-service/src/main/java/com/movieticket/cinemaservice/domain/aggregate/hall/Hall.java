@@ -101,6 +101,14 @@ public class Hall {
         this.status = status;
     }
 
+    public void markAsMaintenance() {
+        this.status = HallStatus.MAINTENANCE;
+    }
+
+    public void markAsActive() {
+        this.status = HallStatus.ACTIVE;
+    }
+
     private void validateCinema(Cinema cinema) {
         if (cinema == null) {
             throw new IllegalArgumentException("Cinema must not be null");
