@@ -91,7 +91,7 @@ eureka:
 
 app:
   jwt:
-    secret: myMovieTicketSecretKey12345678901234567890
+    secret: ${JWT_SECRET}
 management:
   tracing:
     sampling:
