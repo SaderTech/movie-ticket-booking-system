@@ -7,6 +7,8 @@ import com.movieticket.bookingservice.domain.event.BookingConfirmedEvent;
 import com.movieticket.bookingservice.domain.event.DomainEvent;
 import com.movieticket.bookingservice.domain.event.TicketBookedEvent;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +25,7 @@ public class BookingAggregate {
     private BookingAggregate() {}
 
     public static BookingAggregate forNewConfirm(SeatHold seatHold, Booking booking,
-                                                  Payment payment, SagaTransaction saga) {
+                                                 Payment payment, SagaTransaction saga) {
         BookingAggregate agg = new BookingAggregate();
         agg.seatHold = seatHold;
         agg.booking = booking;
@@ -43,6 +45,10 @@ public class BookingAggregate {
     }
 
     public void confirmBooking(List<Ticket> issuedTickets) {
+        confirmBooking(issuedTickets, null, null, null);
+    }
+
+    public void confirmBooking(List<Ticket> issuedTickets, String movieTitle, LocalDate showDate, LocalTime startTime) {
         if (!seatHold.isActive()) {
             booking.fail("Hold expired or inactive");
             throw new IllegalStateException("Seat hold has expired or is not active");
@@ -57,15 +63,20 @@ public class BookingAggregate {
         seatHold.convert();
         saga.complete();
 
+        List<String> seatCodes = tickets.stream()
+                .map(Ticket::getSeatCode)
+                .toList();
+        List<TicketBookedEvent.TicketInfo> ticketInfos = tickets.stream()
+                .map(t -> new TicketBookedEvent.TicketInfo(t.getTicketCode(), t.getSeatCode()))
+                .toList();
+
         domainEvents.add(new BookingConfirmedEvent(
-                booking.getBookingCode(), booking.getUserId(), booking.getCustomerEmail(), booking.getCustomerName(), booking.getShowtimeId(),
+                booking.getBookingCode(), booking.getUserId(), booking.getCustomerEmail(), booking.getCustomerName(),
+                booking.getShowtimeId(), movieTitle, showDate, startTime, seatCodes,
                 booking.getTotalAmount(), payment.getMethod()));
         domainEvents.add(new TicketBookedEvent(
-                booking.getBookingCode(), booking.getUserId(), booking.getCustomerEmail(), booking.getCustomerName(), booking.getShowtimeId(),
-                booking.getTotalAmount(),
-                tickets.stream()
-                        .map(t -> new TicketBookedEvent.TicketInfo(t.getTicketCode(), t.getSeatCode()))
-                        .toList()));
+                booking.getBookingCode(), booking.getUserId(), booking.getCustomerEmail(), booking.getCustomerName(),
+                booking.getShowtimeId(), movieTitle, showDate, startTime, booking.getTotalAmount(), ticketInfos));
     }
 
     public void compensateFailedPayment(String failureReason) {
