@@ -73,12 +73,24 @@ public class ExpiredHoldScheduler {
 
         log.info("Expiring {} stale seat holds", expiredHolds.size());
         for (SeatHold hold : expiredHolds) {
-            self.processExpiredHold(hold);
+            self.processExpiredHold(hold.getId());
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected void processExpiredHold(SeatHold hold) {
+    protected void processExpiredHold(Long holdId) {
+        SeatHold hold = seatHoldRepository.findById(holdId).orElse(null);
+        if (hold == null) {
+            log.warn("Seat hold {} no longer exists, skipping expiration", holdId);
+            return;
+        }
+        if (hold.getStatus() != SeatHoldStatus.ACTIVE
+                || hold.getExpiresAt() == null
+                || !hold.getExpiresAt().isBefore(LocalDateTime.now())) {
+            log.debug("Seat hold {} is no longer stale and active, skipping expiration", holdId);
+            return;
+        }
+
         hold.expire();
         seatHoldRepository.save(hold);
 
