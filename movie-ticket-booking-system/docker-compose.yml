@@ -458,9 +458,7 @@ services:
       context: .
       dockerfile: services/booking-service/Dockerfile
 
-    # Nạp các secret/cấu hình dùng chung từ file .env ở thư mục gốc repository.
-    env_file:
-      - ../.env
+
 
     container_name: movie_booking
 

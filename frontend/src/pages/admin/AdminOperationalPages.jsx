@@ -112,31 +112,409 @@ export function AdminMaintenancesPage() {
   </div>
 }
 
-const emptyShowtime = { movieId: '', cinemaId: '', roomId: '', showDate: '', startTime: '', endTime: '', price: '', availableSeats: '', status: 'AVAILABLE' }
+const emptyShowtime = {
+    movieId: '',
+    cinemaId: '',
+    roomId: '',
+    showDate: '',
+    startTime: '',
+    endTime: '',
+    price: '',
+    status: 'AVAILABLE'
+}
 
 export function AdminShowtimesPage() {
-  const queryClient = useQueryClient()
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ ...emptyShowtime })
-  const items = useQuery({ queryKey: ['admin', 'showtimes'], queryFn: showtimeApi.list })
-  const movies = useQuery({ queryKey: ['admin', 'movies'], queryFn: () => movieApi.list() })
-  const cinemas = useQuery({ queryKey: ['admin', 'cinemas'], queryFn: () => cinemaApi.list() })
-  const halls = useQuery({ queryKey: ['admin', 'halls', form.cinemaId], queryFn: () => cinemaApi.halls(form.cinemaId), enabled: Boolean(form.cinemaId) })
-  const closeForm = () => { setFormOpen(false); setEditing(null); setForm({ ...emptyShowtime }) }
-  const openCreate = () => { setEditing(null); setForm({ ...emptyShowtime }); setFormOpen(true) }
-  const openEdit = (item) => { setEditing(item); setForm({ ...item, movieId: String(item.movieId), cinemaId: String(item.cinemaId), roomId: String(item.roomId), startTime: formatTime(item.startTime), endTime: formatTime(item.endTime) }); setFormOpen(true) }
-  const save = useMutation({ mutationFn: (payload) => editing ? showtimeApi.update(editing.id, payload) : showtimeApi.create(payload), onSuccess: () => { toast.success('Đã lưu suất chiếu'); queryClient.invalidateQueries({ queryKey: ['admin', 'showtimes'] }); closeForm() }, onError: (error) => toast.error(getApiError(error)) })
-  const remove = useMutation({ mutationFn: showtimeApi.remove, onSuccess: () => { toast.success('Đã xóa suất chiếu'); queryClient.invalidateQueries({ queryKey: ['admin', 'showtimes'] }) }, onError: (error) => toast.error(getApiError(error)) })
-  const payload = () => ({ movieId: Number(form.movieId), cinemaId: Number(form.cinemaId), roomId: Number(form.roomId), showDate: form.showDate, startTime: form.startTime.length === 5 ? `${form.startTime}:00` : form.startTime, endTime: form.endTime.length === 5 ? `${form.endTime}:00` : form.endTime, price: Number(form.price), availableSeats: Number(form.availableSeats), status: form.status })
-  const submit = (event) => { event.preventDefault(); if (form.endTime <= form.startTime) return toast.error('Giờ kết thúc phải sau giờ bắt đầu'); save.mutate(payload()) }
+    const queryClient = useQueryClient()
 
+    const [formOpen, setFormOpen] = useState(false)
+    const [editing, setEditing] = useState(null)
+    const [form, setForm] = useState({ ...emptyShowtime })
+
+    const items = useQuery({
+        queryKey: ['admin', 'showtimes'],
+        queryFn: showtimeApi.list
+    })
+
+    const movies = useQuery({
+        queryKey: ['admin', 'movies'],
+        queryFn: () => movieApi.list()
+    })
+
+    const cinemas = useQuery({
+        queryKey: ['admin', 'cinemas'],
+        queryFn: () => cinemaApi.list()
+    })
+
+    const halls = useQuery({
+        queryKey: ['admin', 'halls', form.cinemaId],
+        queryFn: () => cinemaApi.halls(form.cinemaId),
+        enabled: Boolean(form.cinemaId)
+    })
+
+    // Phòng đang được chọn
+    const selectedHall = (halls.data || []).find(
+        hall => hall.id === Number(form.roomId)
+    )
+
+    const closeForm = () => {
+        setFormOpen(false)
+        setEditing(null)
+        setForm({ ...emptyShowtime })
+    }
+
+    const openCreate = () => {
+        setEditing(null)
+        setForm({ ...emptyShowtime })
+        setFormOpen(true)
+    }
+
+    const openEdit = (item) => {
+        setEditing(item)
+
+        setForm({
+            movieId: String(item.movieId),
+            cinemaId: String(item.cinemaId),
+            roomId: String(item.roomId),
+            showDate: item.showDate,
+            startTime: formatTime(item.startTime),
+            endTime: formatTime(item.endTime),
+            price: item.price,
+            status: item.status
+        })
+
+        setFormOpen(true)
+    }
+
+    const save = useMutation({
+        mutationFn: (payload) =>
+            editing
+                ? showtimeApi.update(editing.id, payload)
+                : showtimeApi.create(payload),
+
+        onSuccess: () => {
+            toast.success('Đã lưu suất chiếu')
+            queryClient.invalidateQueries({
+                queryKey: ['admin', 'showtimes']
+            })
+            closeForm()
+        },
+
+        onError: (error) =>
+            toast.error(getApiError(error))
+    })
+
+    const remove = useMutation({
+        mutationFn: showtimeApi.remove,
+
+        onSuccess: () => {
+            toast.success('Đã xóa suất chiếu')
+            queryClient.invalidateQueries({
+                queryKey: ['admin', 'showtimes']
+            })
+        },
+
+        onError: (error) =>
+            toast.error(getApiError(error))
+    })
+
+    const payload = () => ({
+        movieId: Number(form.movieId),
+        cinemaId: Number(form.cinemaId),
+        roomId: Number(form.roomId),
+
+        showDate: form.showDate,
+
+        startTime:
+            form.startTime.length === 5
+                ? `${form.startTime}:00`
+                : form.startTime,
+
+        endTime:
+            form.endTime.length === 5
+                ? `${form.endTime}:00`
+                : form.endTime,
+
+        price: Number(form.price),
+
+        // Tự lấy theo sức chứa của phòng
+        availableSeats: selectedHall?.capacity ?? 0,
+
+        status: form.status
+    })
+
+    const submit = (event) => {
+        event.preventDefault()
+
+        if (form.endTime <= form.startTime) {
+            return toast.error('Giờ kết thúc phải sau giờ bắt đầu')
+        }
+
+        save.mutate(payload())
+    }
   return <div>
     <AdminHeading eyebrow="Lịch chiếu" title="Suất chiếu" description="Danh sách suất chiếu hiện có. Backend hỗ trợ tạo, sửa và xóa." action={<button className="button button-primary" onClick={openCreate}><Plus /> Thêm suất chiếu</button>} />
     <Modal open={formOpen} onClose={save.isPending ? undefined : closeForm} title={editing ? 'Sửa suất chiếu' : 'Thêm suất chiếu'} size="xl">
-      <form className="admin-showtime-form" onSubmit={submit}><div className="form-grid four"><label>Phim<select required value={form.movieId} onChange={(event) => setForm({ ...form, movieId: event.target.value })}><option value="">Chọn phim</option>{(movies.data || []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label>Rạp<select required value={form.cinemaId} onChange={(event) => setForm({ ...form, cinemaId: event.target.value, roomId: '' })}><option value="">Chọn rạp</option>{(cinemas.data || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Phòng<select required disabled={!form.cinemaId} value={form.roomId} onChange={(event) => setForm({ ...form, roomId: event.target.value })}><option value="">Chọn phòng</option>{(halls.data || []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Ngày chiếu<input required type="date" value={form.showDate} onChange={(event) => setForm({ ...form, showDate: event.target.value })} /></label><label>Giờ bắt đầu<input required type="time" step="1" value={form.startTime} onChange={(event) => setForm({ ...form, startTime: event.target.value })} /></label><label>Giờ kết thúc<input required type="time" step="1" value={form.endTime} onChange={(event) => setForm({ ...form, endTime: event.target.value })} /></label><label>Giá vé<input required min="1" type="number" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} /></label><label>Ghế còn trống<input required min="0" type="number" value={form.availableSeats} onChange={(event) => setForm({ ...form, availableSeats: event.target.value })} /></label><label>Trạng thái<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>{['AVAILABLE', 'FULL', 'CANCELLED'].map((item) => <option key={item}>{item}</option>)}</select></label></div><ModalActions pending={save.isPending} onCancel={closeForm} submitLabel={editing ? 'Lưu thay đổi' : 'Tạo suất chiếu'} /></form>
+        <form className="admin-showtime-form" onSubmit={submit}>
+            <div className="form-grid four">
+
+                <label>
+                    Phim
+                    <select
+                        required
+                        value={form.movieId}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                movieId: event.target.value
+                            })
+                        }
+                    >
+                        <option value="">Chọn phim</option>
+
+                        {(movies.data || []).map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.title}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    Rạp
+                    <select
+                        required
+                        value={form.cinemaId}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                cinemaId: event.target.value,
+                                roomId: ""
+                            })
+                        }
+                    >
+                        <option value="">Chọn rạp</option>
+
+                        {(cinemas.data || []).map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    Phòng
+                    <select
+                        required
+                        disabled={!form.cinemaId}
+                        value={form.roomId}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                roomId: event.target.value
+                            })
+                        }
+                    >
+                        <option value="">Chọn phòng</option>
+
+                        {(halls.data || []).map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    Ngày chiếu
+                    <input
+                        required
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={form.showDate}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                showDate:event.target.value
+                            })
+                        }
+                    />
+                </label>
+
+                <label>
+                    Giờ bắt đầu
+                    <input
+                        required
+                        type="time"
+                        step="1"
+                        value={form.startTime}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                startTime: event.target.value
+                            })
+                        }
+                    />
+                </label>
+
+                <label>
+                    Giờ kết thúc
+                    <input
+                        required
+                        type="time"
+                        step="1"
+                        value={form.endTime}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                endTime: event.target.value
+                            })
+                        }
+                    />
+                </label>
+
+                <label>
+                    Giá vé
+                    <input
+                        required
+                        min="1"
+                        type="number"
+                        value={form.price}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                price: event.target.value
+                            })
+                        }
+                    />
+                </label>
+
+                <label>
+                    Ghế còn trống
+                    <input
+                        type="number"
+                        value={selectedHall?.capacity ?? ""}
+                        readOnly
+                        disabled
+                    />
+                </label>
+
+                <label>
+                    Trạng thái
+                    <select
+                        value={form.status}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                status: event.target.value
+                            })
+                        }
+                    >
+                        {["AVAILABLE", "FULL", "CANCELLED"].map((item) => (
+                            <option key={item} value={item}>
+                                {item}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+            </div>
+
+            <ModalActions
+                pending={save.isPending}
+                onCancel={closeForm}
+                submitLabel={editing ? "Lưu thay đổi" : "Tạo suất chiếu"}
+            />
+        </form>
     </Modal>
-    <section className="panel table-panel"><div className="section-heading"><h2>Danh sách suất chiếu</h2><span className="badge neutral">{items.data?.length || 0} suất</span></div>{items.isLoading ? <SkeletonGrid count={5} compact /> : items.isError ? <ErrorState message={getApiError(items.error)} /> : !(items.data || []).length ? <EmptyState title="Chưa có suất chiếu" /> : <div className="table-scroll"><table><thead><tr><th>Phim</th><th>Rạp / Phòng</th><th>Thời gian</th><th>Giá</th><th>Ghế</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{items.data.map((item) => <tr key={item.id}><td>{movies.data?.find((movie) => movie.id === item.movieId)?.title || `#${item.movieId}`}</td><td>{cinemas.data?.find((cinema) => cinema.id === item.cinemaId)?.name || `Rạp #${item.cinemaId}`}<small>Phòng #{item.roomId}</small></td><td>{formatDate(item.showDate)}<small>{formatTime(item.startTime)} – {formatTime(item.endTime)}</small></td><td>{formatCurrency(item.price)}</td><td>{item.availableSeats}</td><td><StatusBadge value={item.status} /></td><td><div className="row-actions"><button className="button button-secondary button-sm" onClick={() => openEdit(item)}><Edit3 /> Sửa</button><button className="button button-danger button-sm" onClick={() => window.confirm('Xóa suất chiếu này?') && remove.mutate(item.id)}><Trash2 /> Xóa</button></div></td></tr>)}</tbody></table></div>}</section>
+
+      <section className="panel table-panel">
+          <div className="section-heading">
+              <h2>Danh sách suất chiếu</h2>
+              <span className="badge neutral">
+      {items.data?.length || 0} suất
+    </span>
+          </div>
+
+          {items.isLoading ? (
+              <SkeletonGrid count={5} compact />
+          ) : items.isError ? (
+              <ErrorState message={getApiError(items.error)} />
+          ) : !(items.data || []).length ? (
+              <EmptyState title="Chưa có suất chiếu" />
+          ) : (
+              <div className="table-scroll">
+                  <table>
+                      <thead>
+                      <tr>
+                          <th>Phim</th>
+                          <th>Rạp / Phòng</th>
+                          <th>Thời gian</th>
+                          <th>Giá</th>
+                          <th>Ghế</th>
+                          <th>Trạng thái</th>
+                          <th>Thao tác</th>
+                      </tr>
+                      </thead>
+
+                      <tbody>
+                      {items.data.map((item) => (
+                          <tr key={item.id}>
+                              <td>
+                                  {movies.data?.find(
+                                      (movie) => movie.id === item.movieId
+                                  )?.title || `#${item.movieId}`}
+                              </td>
+
+                              <td>
+                                  {cinemas.data?.find(
+                                      (cinema) => cinema.id === item.cinemaId
+                                  )?.name || `Rạp #${item.cinemaId}`}
+                                  <small>Phòng #{item.roomId}</small>
+                              </td>
+
+                              <td>
+                                  {formatDate(item.showDate)}
+                                  <small>
+                                      {formatTime(item.startTime)} – {formatTime(item.endTime)}
+                                  </small>
+                              </td>
+
+                              <td>{formatCurrency(item.price)}</td>
+
+                              <td>{item.availableSeats}</td>
+
+                              <td>
+                                  <StatusBadge value={item.status} />
+                              </td>
+
+                              <td>
+                                  <div className="row-actions">
+                                      <button
+                                          className="button button-secondary button-sm"
+                                          onClick={() => openEdit(item)}
+                                      >
+                                          <Edit3 /> Sửa
+                                      </button>
+
+                                      <button
+                                          className="button button-danger button-sm"
+                                          onClick={() =>
+                                              window.confirm("Xóa suất chiếu này?") &&
+                                              remove.mutate(item.id)
+                                          }
+                                      >
+                                          <Trash2 /> Xóa
+                                      </button>
+                                  </div>
+                              </td>
+                          </tr>
+                      ))}
+                      </tbody>
+                  </table>
+              </div>
+          )}
+      </section>
   </div>
 }
 

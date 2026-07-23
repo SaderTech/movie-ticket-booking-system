@@ -10,6 +10,8 @@ import com.movieticket.showtimeservice.application.dto.request.ReleaseSeatReques
 import com.movieticket.showtimeservice.domain.model.Showtime;
 import com.movieticket.showtimeservice.domain.repository.ShowtimeRepository;
 import com.movieticket.showtimeservice.application.dto.response.SeatAvailabilityResponse;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 
 import com.movieticket.showtimeservice.exception.DuplicateShowtimeException;
@@ -74,8 +76,9 @@ public class ShowtimeService {
 
 
 
-        // Check thời gian hợp lệ
-        validateShowTime(
+        // Check ngày và thời gian hợp lệ
+        validateShowDateTime(
+                request.getShowDate(),
                 request.getStartTime(),
                 request.getEndTime()
         );
@@ -152,7 +155,8 @@ public class ShowtimeService {
 
 
 
-        validateShowTime(
+        validateShowDateTime(
+                request.getShowDate(),
                 request.getStartTime(),
                 request.getEndTime()
         );
@@ -246,13 +250,46 @@ public class ShowtimeService {
     // ===============================
     // VALIDATE TIME
     // ===============================
-    private void validateShowTime(
-            java.time.LocalTime startTime,
-            java.time.LocalTime endTime
+    // ===============================
+// VALIDATE SHOW DATE + TIME
+// ===============================
+    private void validateShowDateTime(
+            LocalDate showDate,
+            LocalTime startTime,
+            LocalTime endTime
     ) {
 
 
-        if (endTime.isBefore(startTime)
+        LocalDate today = LocalDate.now();
+
+
+        // Không cho tạo suất chiếu trong quá khứ
+        if(showDate.isBefore(today)) {
+
+            throw new IllegalArgumentException(
+                    "Show date must be today or future date"
+            );
+
+        }
+
+
+
+        // Nếu chiếu trong hôm nay
+        // thì giờ bắt đầu phải lớn hơn giờ hiện tại
+        if(showDate.equals(today)
+                && startTime.isBefore(LocalTime.now())) {
+
+
+            throw new IllegalArgumentException(
+                    "Start time must be in the future"
+            );
+
+        }
+
+
+
+        // Check giờ kết thúc
+        if(endTime.isBefore(startTime)
                 || endTime.equals(startTime)) {
 
 
