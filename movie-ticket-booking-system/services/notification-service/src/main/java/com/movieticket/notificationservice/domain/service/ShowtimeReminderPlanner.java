@@ -32,7 +32,7 @@ public class ShowtimeReminderPlanner {
     public String buildShowtimeLabel(JsonNode payload) {
         Optional<LocalDateTime> showtimeStart = resolveShowtimeStart(payload);
         return showtimeStart
-                .map(value -> value.toLocalDate() + " lúc " + value.toLocalTime())
+                .map(value -> value.toLocalTime().toString())
                 .orElse("suất chiếu của bạn");
     }
 

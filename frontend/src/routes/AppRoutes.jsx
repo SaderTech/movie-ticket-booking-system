@@ -18,6 +18,7 @@ const ShowtimesPage = lazyNamed(() => import('../pages/public/ShowtimesPage'), '
 const ProfilePage = lazyNamed(() => import('../pages/account/ProfilePage'), 'ProfilePage')
 const BookingsPage = lazyNamed(() => import('../pages/account/BookingsPage'), 'BookingsPage')
 const BookingDetailPage = lazyNamed(() => import('../pages/account/BookingDetailPage'), 'BookingDetailPage')
+const AccountPaymentsPage = lazyNamed(() => import('../pages/account/AccountPaymentsPage'), 'AccountPaymentsPage')
 const LoginPage = lazyNamed(() => import('../pages/auth/LoginPage'), 'LoginPage')
 const RegisterPage = lazyNamed(() => import('../pages/auth/RegisterPage'), 'RegisterPage')
 const SeatSelectionPage = lazyNamed(() => import('../pages/booking/SeatSelectionPage'), 'SeatSelectionPage')
@@ -56,6 +57,7 @@ export function AppRoutes() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="bookings/:bookingCode" element={<BookingDetailPage />} />
+        <Route path="payments" element={<AccountPaymentsPage />} />
       </Route>
     </Route>
     <Route path="login" element={<LoginPage />} />
