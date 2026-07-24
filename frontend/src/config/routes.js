@@ -6,6 +6,7 @@ export const routes = {
   register: '/register',
   profile: '/account/profile',
   bookings: '/account/bookings',
+  payments: '/account/payments',
   checkout: '/booking/checkout',
   paymentResult: '/payment-result',
   admin: '/admin',

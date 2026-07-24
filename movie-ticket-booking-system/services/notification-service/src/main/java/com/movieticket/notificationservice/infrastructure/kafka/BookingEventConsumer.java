@@ -3,10 +3,10 @@ package com.movieticket.notificationservice.infrastructure.kafka;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.movieticket.notificationservice.application.command.SendNotificationCommand;
-import com.movieticket.notificationservice.domain.service.NotificationRecipientResolver;
-import com.movieticket.notificationservice.domain.service.ShowtimeReminderPlanner;
 import com.movieticket.notificationservice.application.usecase.SendNotificationUseCase;
 import com.movieticket.notificationservice.config.Constants;
+import com.movieticket.notificationservice.domain.service.NotificationRecipientResolver;
+import com.movieticket.notificationservice.domain.service.ShowtimeReminderPlanner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -15,8 +15,12 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -62,17 +66,17 @@ public class BookingEventConsumer {
         String totalAmount = text(payload, "totalAmount", "0");
         String movieTitle = text(payload, "movieTitle", "bộ phim bạn đã chọn");
         String showtimeLabel = showtimeReminderPlanner.buildShowtimeLabel(payload);
-        String qrEndpoint = "/api/v1/qr-codes/ticket/" + bookingCode;
+        String seatLabel = seatLabel(payload);
         String sourceEventId = sourceEventId(payload, rawMessage, bookingCode, "booking-confirmed");
 
         String message = "Xin chào " + customerName + ",\n\n"
-                + "Bạn đã đặt vé thành công.\n"
-                + "Mã booking: " + bookingCode + "\n"
+                + "Bạn đã đặt vé thành công. Vé điện tử sẽ được phát hành ngay sau khi hệ thống tạo ticket code.\n"
+                + "Mã đặt vé: " + bookingCode + "\n"
                 + "Phim: " + movieTitle + "\n"
                 + "Suất chiếu: " + showtimeLabel + "\n"
-                + "Tổng tiền: " + totalAmount + "\n"
-                + "QR vé: " + qrEndpoint + "\n\n"
-                + "Vui lòng đưa mã QR này cho nhân viên rạp khi check-in.";
+                + "Ghế: " + seatLabel + "\n"
+                + "Tổng tiền: " + totalAmount + "\n\n"
+                + "Khi ticket code được phát hành, hệ thống sẽ gửi email vé kèm mã QR theo từng ticket code.";
 
         sendNotificationUseCase.execute(new SendNotificationCommand(
                 recipientEmail,
@@ -85,7 +89,7 @@ public class BookingEventConsumer {
                 null
         ));
 
-        scheduleShowtimeReminder(payload, recipientEmail, customerName, bookingCode, movieTitle, showtimeLabel, sourceEventId);
+        scheduleShowtimeReminder(payload, recipientEmail, customerName, bookingCode, movieTitle, showtimeLabel, seatLabel, sourceEventId);
     }
 
     private void handleBookingCancelled(JsonNode payload, String topic, String rawMessage) {
@@ -96,7 +100,8 @@ public class BookingEventConsumer {
         String sourceEventId = sourceEventId(payload, rawMessage, bookingCode, "booking-cancelled");
 
         String message = "Xin chào " + customerName + ",\n\n"
-                + "Booking " + bookingCode + " của bạn đã được hủy.\n"
+                + "Mã đặt vé: " + bookingCode + "\n"
+                + "Trạng thái: Đã hủy\n"
                 + "Lý do: " + reason + "\n\n"
                 + "Nếu booking đã thanh toán, hệ thống sẽ xử lý hoàn tiền theo chính sách của rạp.";
 
@@ -116,16 +121,20 @@ public class BookingEventConsumer {
         String recipientEmail = recipientResolver.resolveEmail(payload);
         String customerName = recipientResolver.resolveCustomerName(payload);
         String bookingCode = text(payload, "bookingCode", "unknown-booking");
+        String movieTitle = text(payload, "movieTitle", "bộ phim bạn đã chọn");
+        String showtimeLabel = showtimeReminderPlanner.buildShowtimeLabel(payload);
+        String seatLabel = seatLabel(payload);
+        String ticketCodeLabel = ticketCodeLabel(payload);
         String sourceEventId = sourceEventId(payload, rawMessage, bookingCode, "ticket-booked");
 
-        String ticketSummary = buildTicketSummary(payload);
-        String qrEndpoint = "/api/v1/qr-codes/ticket/" + bookingCode;
-
         String message = "Xin chào " + customerName + ",\n\n"
-                + "Vé của booking " + bookingCode + " đã được phát hành.\n"
-                + ticketSummary
-                + "QR vé: " + qrEndpoint + "\n\n"
-                + "Vui lòng đưa mã QR hoặc mã vé cho nhân viên rạp khi check-in.";
+                + "Vé của bạn đã được phát hành thành công.\n"
+                + "Mã đặt vé: " + bookingCode + "\n"
+                + "Phim: " + movieTitle + "\n"
+                + "Suất chiếu: " + showtimeLabel + "\n"
+                + "Ghế: " + seatLabel + "\n"
+                + "Mã vé/QR: " + ticketCodeLabel + "\n\n"
+                + "Mã QR của từng ticket code đã được đính kèm trong email. Vui lòng đưa đúng mã QR hoặc mã vé cho nhân viên rạp khi check-in.";
 
         sendNotificationUseCase.execute(new SendNotificationCommand(
                 recipientEmail,
@@ -144,10 +153,12 @@ public class BookingEventConsumer {
         String customerName = recipientResolver.resolveCustomerName(payload);
         String holdToken = text(payload, "holdToken", "unknown-hold-token");
         String expiresAt = text(payload, "expiresAt", "thời gian giữ ghế đã cấu hình");
+        String seatLabel = seatLabel(payload);
         String sourceEventId = sourceEventId(payload, rawMessage, holdToken, "seat-hold-created");
 
         String message = "Xin chào " + customerName + ",\n\n"
                 + "Bạn đang giữ ghế với mã giữ chỗ: " + holdToken + ".\n"
+                + "Ghế: " + seatLabel + "\n"
                 + "Thời gian hết hạn: " + expiresAt + ".\n"
                 + "Vui lòng hoàn tất thanh toán trước khi hết hạn để xác nhận vé.";
 
@@ -167,10 +178,12 @@ public class BookingEventConsumer {
         String recipientEmail = recipientResolver.resolveEmail(payload);
         String customerName = recipientResolver.resolveCustomerName(payload);
         String holdToken = text(payload, "holdToken", "unknown-hold-token");
+        String seatLabel = seatLabel(payload);
         String sourceEventId = sourceEventId(payload, rawMessage, holdToken, "seat-hold-expired");
 
         String message = "Xin chào " + customerName + ",\n\n"
                 + "Mã giữ chỗ " + holdToken + " đã hết hạn.\n"
+                + "Ghế: " + seatLabel + "\n"
                 + "Các ghế trong lượt giữ này đã được mở lại cho người dùng khác.\n"
                 + "Bạn có thể chọn lại ghế và đặt vé mới nếu vẫn muốn tiếp tục.";
 
@@ -193,6 +206,7 @@ public class BookingEventConsumer {
             String bookingCode,
             String movieTitle,
             String showtimeLabel,
+            String seatLabel,
             String confirmedSourceEventId
     ) {
         Optional<LocalDateTime> reminderAt = showtimeReminderPlanner.resolveReminderAt(payload);
@@ -203,9 +217,10 @@ public class BookingEventConsumer {
 
         String message = "Xin chào " + customerName + ",\n\n"
                 + "Suất chiếu của bạn sắp bắt đầu.\n"
-                + "Mã booking: " + bookingCode + "\n"
+                + "Mã đặt vé: " + bookingCode + "\n"
                 + "Phim: " + movieTitle + "\n"
-                + "Thời gian: " + showtimeLabel + "\n\n"
+                + "Suất chiếu: " + showtimeLabel + "\n"
+                + "Ghế: " + seatLabel + "\n\n"
                 + "Vui lòng đến rạp sớm để check-in và ổn định chỗ ngồi.";
 
         sendNotificationUseCase.execute(new SendNotificationCommand(
@@ -220,19 +235,43 @@ public class BookingEventConsumer {
         ));
     }
 
-    private String buildTicketSummary(JsonNode payload) {
-        JsonNode tickets = payload.path("tickets");
-        if (!tickets.isArray() || tickets.size() == 0) {
-            return "Danh sách vé: chưa có thông tin chi tiết.\n";
+    private String seatLabel(JsonNode payload) {
+        List<String> seats = new ArrayList<>();
+        JsonNode seatCodes = payload.path("seatCodes");
+        if (seatCodes.isArray()) {
+            seatCodes.forEach(node -> addIfPresent(seats, node.asText(null)));
         }
 
-        StringBuilder builder = new StringBuilder("Danh sách vé:\n");
-        tickets.forEach(ticket -> {
-            String ticketCode = text(ticket, "ticketCode", "unknown-ticket");
-            String seatCode = text(ticket, "seatCode", "unknown-seat");
-            builder.append("- ").append(ticketCode).append(" / Ghế ").append(seatCode).append("\n");
-        });
-        return builder.toString();
+        JsonNode tickets = payload.path("tickets");
+        if (tickets.isArray()) {
+            tickets.forEach(ticket -> addIfPresent(seats, ticket.path("seatCode").asText(null)));
+        }
+
+        return joinDistinct(seats, "chưa có thông tin ghế");
+    }
+
+    private String ticketCodeLabel(JsonNode payload) {
+        List<String> ticketCodes = new ArrayList<>();
+        JsonNode tickets = payload.path("tickets");
+        if (tickets.isArray()) {
+            tickets.forEach(ticket -> addIfPresent(ticketCodes, ticket.path("ticketCode").asText(null)));
+        }
+        addIfPresent(ticketCodes, payload.path("ticketCode").asText(null));
+        return joinDistinct(ticketCodes, "chưa có ticket code");
+    }
+
+    private void addIfPresent(List<String> values, String value) {
+        if (value != null && !value.isBlank()) {
+            values.add(value.trim());
+        }
+    }
+
+    private String joinDistinct(List<String> values, String fallback) {
+        Set<String> distinct = new LinkedHashSet<>(values);
+        if (distinct.isEmpty()) {
+            return fallback;
+        }
+        return String.join(", ", distinct);
     }
 
     private String text(JsonNode payload, String field, String defaultValue) {
