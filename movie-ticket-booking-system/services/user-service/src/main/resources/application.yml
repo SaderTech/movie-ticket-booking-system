@@ -25,7 +25,9 @@ spring:
 # JWT CONFIG
 # =====================
 jwt:
-  secret: bW92aWV0aWNrZXRzZWN1cml0eWtleWZvcmhzbTI1NmFsZ29yaXRobQ==
+  secret: ${JWT_SECRET}
+
+
   expiration: 86400000
 
 
