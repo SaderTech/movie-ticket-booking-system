@@ -48,6 +48,7 @@ eureka:
     prefer-ip-address: true
 
 app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
   notification:
     max-retries: 3
     retry:

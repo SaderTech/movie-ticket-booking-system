@@ -97,6 +97,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (HttpMethod.OPTIONS.equals(method)
                 || path.startsWith("/api/auth/")
                 || path.equals("/ping")
+                || path.startsWith("/fallback/")
                 || path.startsWith("/api/v1/qr-codes/")) {
             return true;
         }

@@ -13,10 +13,27 @@ spring:
   cloud:
     gateway:
       routes:
+        # Authentication happens before a user ID exists, so this quota is by client IP.
+        # 30 tokens / 6 tokens per request = an initial burst of 5 requests,
+        # then approximately 10 requests per minute for the same IP.
+        - id: auth-service-route
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 6
+                key-resolver: "#{@clientIpKeyResolver}"
+                deny-empty-key: false
+
         - id: user-service-route
           uri: lb://USER-SERVICE
           predicates:
-            - Path=/api/users/**,/api/auth/**
+            - Path=/api/users/**
           filters:
             - StripPrefix=0
 
@@ -31,8 +48,17 @@ spring:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 5
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@keyResolver}"
+                key-resolver: "#{@userOrClientKeyResolver}"
                 deny-empty-key: false
+            - name: CircuitBreaker
+              args:
+                name: movieServiceCircuitBreaker
+                fallbackUri: forward:/fallback/movie
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
 
         - id: cinema-service-route
           uri: lb://CINEMA-SERVICE
@@ -40,6 +66,22 @@ spring:
             - Path=/api/cinemas/**,/api/halls/**,/api/seats/**,/api/seat-types/**,/api/hall-maintenances/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrClientKeyResolver}"
+                deny-empty-key: false
+            - name: CircuitBreaker
+              args:
+                name: cinemaServiceCircuitBreaker
+                fallbackUri: forward:/fallback/cinema
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
 
         - id: showtime-service-route
           uri: lb://SHOWTIME-SERVICE
@@ -47,6 +89,22 @@ spring:
             - Path=/api/showtimes/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrClientKeyResolver}"
+                deny-empty-key: false
+            - name: CircuitBreaker
+              args:
+                name: showtimeServiceCircuitBreaker
+                fallbackUri: forward:/fallback/showtime
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
 
         - id: booking-service-route
           uri: lb://BOOKING-SERVICE
@@ -54,6 +112,13 @@ spring:
             - Path=/api/bookings/**,/api/admin/booking-settings/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 4
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrClientKeyResolver}"
+                deny-empty-key: false
 
         - id: notification-service-route
           uri: lb://NOTIFICATION-SERVICE
@@ -92,6 +157,43 @@ eureka:
 app:
   jwt:
     secret: ${JWT_SECRET}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      movieServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      cinemaServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      showtimeServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  timelimiter:
+    instances:
+      movieServiceCircuitBreaker:
+        timeoutDuration: 4s
+      cinemaServiceCircuitBreaker:
+        timeoutDuration: 4s
+      showtimeServiceCircuitBreaker:
+        timeoutDuration: 4s
+
 management:
   tracing:
     sampling:
@@ -102,7 +204,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,gateway
+        include: health,info,metrics,prometheus,gateway,circuitbreakers
   endpoint:
     health:
       show-details: always

@@ -460,7 +460,7 @@ services:
 
     # Nạp các secret/cấu hình dùng chung từ file .env ở thư mục gốc repository.
     env_file:
-      - ../.env
+      - .env
 
     container_name: movie_booking
 
@@ -546,6 +546,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
 
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://localhost:8080}
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
