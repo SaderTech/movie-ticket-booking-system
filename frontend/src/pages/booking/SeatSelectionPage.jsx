@@ -70,9 +70,10 @@ export function SeatSelectionPage() {
     return booked.has(code) ? { ...seat, bookingStatus: 'BOOKED' } : held.has(code) ? { ...seat, bookingStatus: 'HELD' } : seat
   })
   const estimate = Number(showtime.data.price || 0) * selected.length
+  const returnToMovie = () => navigate(`/movies/${showtime.data.movieId}#showtimes`)
 
   return <div className="booking-page"><div className="container">
-    <BookingProgress current={2} />
+    <BookingProgress current={2} onReturnToMovie={returnToMovie} onStepClick={(step) => { if (step === 1) returnToMovie() }} />
     <header className="booking-heading"><div><span className="eyebrow">Bước 2 · Chọn vị trí đẹp nhất</span><h1>Chọn ghế</h1></div><div className="booking-context"><SafeImage src={movie.data?.posterUrl} alt={`Poster ${movie.data?.title || ''}`} /><div><strong><Ticket /> {movie.data?.title || `Phim #${showtime.data.movieId}`}</strong><span><MapPin /> {cinema.data?.name || hall.data?.cinemaName || `Rạp #${showtime.data.cinemaId}`} · {hall.data?.name || `Phòng ${showtime.data.roomId}`}</span><span><Clock /> {formatDate(showtime.data.showDate)} · {formatTime(showtime.data.startTime)}</span></div></div></header>
     <div className="seat-layout"><section className="panel seat-panel"><div className="seat-panel-heading"><div><span className="eyebrow"><Armchair /> Sơ đồ phòng chiếu</span><h2>Chọn tối đa {appConfig.maxSeatsPerHold} ghế</h2></div><span className="badge neutral">{hall.data?.capacity || displayedSeats.length || 0} ghế</span></div><SeatMap key={showtimeId} seats={displayedSeats} selected={selected} onToggle={toggleSeat} /></section><aside className="panel booking-summary"><span className="eyebrow"><Armchair /> Ghế đã chọn</span><h2>{selected.length ? selected.join(', ') : 'Chưa chọn ghế'}</h2><div className="summary-row"><span>Số lượng</span><strong>{selected.length} ghế</strong></div><div className="summary-row"><span>Giá suất chiếu</span><strong>{formatCurrency(showtime.data.price)} / ghế</strong></div><div className="summary-total"><span>Tạm tính</span><strong>{formatCurrency(estimate)}</strong></div><button className="button button-primary button-lg full" disabled={!selected.length || hold.isPending} onClick={() => hold.mutate()}>{hold.isPending ? <><LoadingSpinner /> Đang giữ ghế…</> : <>Tiếp tục với {selected.length} ghế <Ticket /></>}</button></aside></div>
   </div></div>

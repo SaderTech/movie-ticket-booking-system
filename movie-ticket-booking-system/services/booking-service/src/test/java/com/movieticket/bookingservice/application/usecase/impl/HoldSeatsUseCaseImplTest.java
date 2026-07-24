@@ -4,12 +4,12 @@ import com.movieticket.bookingservice.api.dto.HoldSeatsResponse;
 import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.application.command.HoldSeatsCommand;
 import com.movieticket.bookingservice.domain.entity.BookingSetting;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingEventOutboxRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingSettingRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaIdempotencyRecordRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaSeatHoldRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
+import com.movieticket.bookingservice.domain.repository.BookingEventOutboxRepository;
+import com.movieticket.bookingservice.domain.repository.BookingRepository;
+import com.movieticket.bookingservice.domain.repository.BookingSettingRepository;
+import com.movieticket.bookingservice.domain.repository.IdempotencyRecordRepository;
+import com.movieticket.bookingservice.domain.repository.SeatHoldRepository;
+import com.movieticket.bookingservice.domain.repository.TicketRepository;
 import com.movieticket.bookingservice.infrastructure.client.MovieClient;
 import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
 import com.movieticket.bookingservice.infrastructure.client.SeatClient;
@@ -43,17 +43,17 @@ import static org.mockito.Mockito.*;
 class HoldSeatsUseCaseImplTest {
 
     @Mock
-    private JpaBookingRepository bookingRepository;
+    private BookingRepository bookingRepository;
     @Mock
-    private JpaSeatHoldRepository seatHoldRepository;
+    private SeatHoldRepository seatHoldRepository;
     @Mock
-    private JpaTicketRepository ticketRepository;
+    private TicketRepository ticketRepository;
     @Mock
-    private JpaBookingEventOutboxRepository outboxRepository;
+    private BookingEventOutboxRepository outboxRepository;
     @Mock
-    private JpaBookingSettingRepository bookingSettingRepository;
+    private BookingSettingRepository bookingSettingRepository;
     @Mock
-    private JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    private IdempotencyRecordRepository idempotencyRecordRepository;
     @Mock
     private RedissonClient redissonClient;
     @Mock

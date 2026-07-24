@@ -6,10 +6,11 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.application.command.CancelBookingCommand;
 import com.movieticket.bookingservice.application.mapper.BookingResponseMapper;
+import com.movieticket.bookingservice.application.usecase.CancelBookingUseCase;
 import com.movieticket.bookingservice.domain.aggregate.BookingAggregate;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
-import com.movieticket.bookingservice.infrastructure.jpa.*;
+import com.movieticket.bookingservice.domain.repository.*;
 import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,14 +29,14 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CancelBookingUseCaseImpl {
+public class CancelBookingUseCaseImpl implements CancelBookingUseCase {
 
     private final DomainEventPublisherImpl domainEventPublisher;
-    private final JpaBookingRepository bookingRepository;
-    private final JpaTicketRepository ticketRepository;
-    private final JpaPaymentRepository paymentRepository;
-    private final JpaSeatHoldRepository seatHoldRepository;
-    private final JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    private final BookingRepository bookingRepository;
+    private final TicketRepository ticketRepository;
+    private final PaymentRepository paymentRepository;
+    private final SeatHoldRepository seatHoldRepository;
+    private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional

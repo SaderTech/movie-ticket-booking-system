@@ -6,6 +6,7 @@ import com.movieticket.bookingservice.domain.entity.SeatHoldSeat;
 import com.movieticket.bookingservice.domain.enums.OutboxStatus;
 import com.movieticket.bookingservice.domain.enums.SeatHoldStatus;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingEventOutboxRepository;
+import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
 import com.movieticket.bookingservice.infrastructure.jpa.JpaSeatHoldRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ class ExpiredHoldSchedulerTest {
 
     @Mock
     private JpaSeatHoldRepository seatHoldRepository;
+
+    @Mock
+    private JpaBookingRepository bookingRepository;
 
     @Mock
     private JpaBookingEventOutboxRepository outboxRepository;
@@ -69,6 +73,7 @@ class ExpiredHoldSchedulerTest {
                 .seatType("NORMAL")
                 .build());
         when(seatHoldRepository.findById(42L)).thenReturn(Optional.of(hold));
+        when(bookingRepository.findByHoldToken("HOLD_EXPIRED")).thenReturn(Optional.empty());
 
         scheduler.processExpiredHold(42L);
 

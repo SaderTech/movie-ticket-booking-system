@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -91,7 +92,7 @@ class BookingControllerIntegrationTest {
                 ShowtimeResponse showtimeData = new ShowtimeResponse(
                                 1L, 100L, 200L, 300L,
                                 LocalDate.of(2026, 7, 15), LocalTime.of(19, 0), LocalTime.of(21, 30),
-                                null, null, "AVAILABLE");
+                                BigDecimal.valueOf(120_000), null, "AVAILABLE");
                 when(showtimeClient.getShowtime(anyLong())).thenReturn(showtimeData);
 
                 MovieResponse movieData = new MovieResponse(
@@ -155,7 +156,8 @@ class BookingControllerIntegrationTest {
                 TreeMap<String, String> sorted = new TreeMap<>(params);
                 sorted.remove("vnp_SecureHash");
                 String hashData = sorted.entrySet().stream()
-                                .map(e -> e.getKey() + "=" + (e.getValue() != null ? e.getValue() : ""))
+                                .filter(e -> e.getValue() != null && !e.getValue().isEmpty())
+                                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
                                 .collect(Collectors.joining("&"));
                 return hmacSha512(vnpHashSecret, hashData);
         }
@@ -367,7 +369,7 @@ class BookingControllerIntegrationTest {
         }
 
         @Test
-        void vnpayReturn_failedResponseCode_returnsError() throws Exception {
+        void vnpayReturn_failedResponseCode_returnsFailedBooking() throws Exception {
                 String holdToken = holdSeats(List.of("G1"));
                 JsonNode confirmData = confirmVnPay(holdToken);
                 String transactionRef = confirmData.get("payment").get("transactionRef").asText();
@@ -407,6 +409,8 @@ class BookingControllerIntegrationTest {
                                 .param("vnp_TransactionStatus", vnpayParams.get("vnp_TransactionStatus"))
                                 .param("vnp_TxnRef", vnpayParams.get("vnp_TxnRef"))
                                 .param("vnp_SecureHash", vnpayParams.get("vnp_SecureHash")))
-                                .andExpect(status().isBadRequest());
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data.status").value("FAILED"));
         }
 }

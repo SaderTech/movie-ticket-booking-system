@@ -5,7 +5,7 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.application.command.CancelBookingCommand;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
-import com.movieticket.bookingservice.infrastructure.jpa.*;
+import com.movieticket.bookingservice.domain.repository.*;
 import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -26,11 +26,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CancelBookingUseCaseImplTest {
 
-    @Mock private JpaBookingRepository bookingRepository;
-    @Mock private JpaTicketRepository ticketRepository;
-    @Mock private JpaPaymentRepository paymentRepository;
-    @Mock private JpaSeatHoldRepository seatHoldRepository;
-    @Mock private JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    @Mock private BookingRepository bookingRepository;
+    @Mock private TicketRepository ticketRepository;
+    @Mock private PaymentRepository paymentRepository;
+    @Mock private SeatHoldRepository seatHoldRepository;
+    @Mock private IdempotencyRecordRepository idempotencyRecordRepository;
     @Mock private ObjectMapper objectMapper;
     @Mock private DomainEventPublisherImpl domainEventPublisher;
 
@@ -70,7 +70,7 @@ class CancelBookingUseCaseImplTest {
                 .seats(List.of(seat))
                 .build();
         Ticket ticket = Ticket.builder().id(1L).bookingId(1L).ticketCode("TCK001").status(TicketStatus.ACTIVE).build();
-        Payment payment = Payment.builder().id(1L).bookingId(1L).transactionRef("TXN001").method("MOCK")
+        Payment payment = Payment.builder().id(1L).bookingId(1L).transactionRef("TXN001").method("VNPAY")
                 .amount(BigDecimal.TEN).status(PaymentStatus.PAID).build();
 
         when(bookingRepository.findByBookingCode("BK_ACTIVE")).thenReturn(Optional.of(booking));

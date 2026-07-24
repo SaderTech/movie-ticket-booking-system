@@ -6,7 +6,7 @@ import com.movieticket.bookingservice.application.command.ConfirmBookingCommand;
 import com.movieticket.bookingservice.domain.aggregate.BookingAggregate;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
-import com.movieticket.bookingservice.infrastructure.jpa.*;
+import com.movieticket.bookingservice.domain.repository.*;
 import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
 import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
 import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
@@ -39,21 +39,21 @@ import static org.mockito.Mockito.*;
 class ConfirmBookingUseCaseImplTest {
 
     @Mock
-    private JpaSeatHoldRepository seatHoldRepository;
+    private SeatHoldRepository seatHoldRepository;
     @Mock
-    private JpaBookingRepository bookingRepository;
+    private BookingRepository bookingRepository;
     @Mock
-    private JpaTicketRepository ticketRepository;
+    private TicketRepository ticketRepository;
     @Mock
-    private JpaPaymentRepository paymentRepository;
+    private PaymentRepository paymentRepository;
     @Mock
-    private JpaSagaTransactionRepository sagaTransactionRepository;
+    private SagaTransactionRepository sagaTransactionRepository;
     @Mock
     private PaymentAdapter paymentAdapter;
     @Mock
     private DomainEventPublisherImpl domainEventPublisher;
     @Mock
-    private JpaBookingSettingRepository bookingSettingRepository;
+    private BookingSettingRepository bookingSettingRepository;
     @Mock
     private ShowtimeClient showtimeClient;
     @Mock
@@ -69,7 +69,7 @@ class ConfirmBookingUseCaseImplTest {
     @Mock
     private ObjectMapper objectMapper;
     @Mock
-    private JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    private IdempotencyRecordRepository idempotencyRecordRepository;
 
         @InjectMocks
         private ConfirmBookingUseCaseImpl useCase;
