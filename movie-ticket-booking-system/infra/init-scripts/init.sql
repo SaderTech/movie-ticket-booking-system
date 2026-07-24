@@ -82,7 +82,7 @@ SELECT 'CREATE DATABASE notification_db'
 -- queryable before that service is restarted.
 -- ============================================================
 
-\connect user_db
+    \connect user_db
 
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = ON;
@@ -2319,56 +2319,56 @@ SELECT setval(
 
 SELECT setval(
                pg_get_serial_sequence('public.seat_holds', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.seat_hold_seats', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.bookings', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.booking_seats', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.tickets', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.payments', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.saga_transactions', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.booking_event_outbox', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 SELECT setval(
                pg_get_serial_sequence('public.idempotency_records', 'id'),
-                1,
-                FALSE
+               1,
+               FALSE
        );
 
 
@@ -2619,6 +2619,7 @@ CREATE TABLE public.notification_logs
                         'SEAT_HOLD_EXPIRED',
                         'PAYMENT_SUCCESS',
                         'PAYMENT_FAILED',
+                        'PAYMENT_REFUND_REQUIRED',
                         'SHOWTIME_REMINDER',
                         'TICKET_BOOKED',
                         'TICKET_CANCELLED',
@@ -2679,37 +2680,102 @@ VALUES
         '00000000-0000-0000-0000-000000000101',
         'BOOKING_CONFIRMATION',
         'Xác nhận đặt vé thành công - {{bookingCode}}',
-        'Xin chào {{customerName}}, booking {{bookingCode}} của bạn đã được xác nhận.'
+        'Xin chào {{customerName}},
+
+Bạn đã đặt vé thành công.
+Mã booking: {{bookingCode}}
+Phim: {{movieTitle}}
+Suất chiếu: {{showtimeLabel}}
+Tổng tiền: {{totalAmount}}
+
+Mã QR vé đã được đính kèm trong email. Vui lòng đưa mã QR cho nhân viên rạp khi check-in.'
     ),
     (
         '00000000-0000-0000-0000-000000000102',
         'SHOWTIME_REMINDER',
         'Nhắc lịch xem phim - {{bookingCode}}',
-        'Xin chào {{customerName}}, suất chiếu {{bookingCode}} của bạn sắp bắt đầu.'
+        'Xin chào {{customerName}},
+
+Suất chiếu của bạn sắp bắt đầu.
+Mã booking: {{bookingCode}}
+Phim: {{movieTitle}}
+Thời gian: {{showtimeLabel}}
+
+Vui lòng đến rạp sớm để check-in và ổn định chỗ ngồi.'
     ),
     (
         '00000000-0000-0000-0000-000000000103',
         'TICKET_BOOKED',
         'Vé xem phim đã sẵn sàng - {{bookingCode}}',
-        'Xin chào {{customerName}}, vé của booking {{bookingCode}} đã được phát hành.'
+        'Xin chào {{customerName}},
+
+Vé của booking {{bookingCode}} đã được phát hành.
+{{ticketSummary}}
+Mã QR vé đã được đính kèm trong email.'
     ),
     (
         '00000000-0000-0000-0000-000000000104',
         'BOOKING_CANCELLED',
         'Thông báo hủy vé - {{bookingCode}}',
-        'Xin chào {{customerName}}, booking {{bookingCode}} của bạn đã được hủy.'
+        'Xin chào {{customerName}},
+
+Booking {{bookingCode}} của bạn đã được hủy.
+Lý do: {{reason}}
+
+Nếu booking đã thanh toán, hệ thống sẽ xử lý hoàn tiền theo chính sách của rạp.'
     ),
     (
         '00000000-0000-0000-0000-000000000105',
         'PAYMENT_SUCCESS',
         'Thanh toán thành công - {{paymentCode}}',
-        'Thanh toán {{paymentCode}} đã hoàn tất thành công.'
+        'Xin chào {{customerName}},
+
+Thanh toán {{paymentCode}} đã hoàn tất thành công.
+Booking: {{bookingCode}}
+Số tiền: {{amount}}
+
+Bạn có thể xem lại giao dịch trong mục Thanh toán của tài khoản.'
     ),
     (
         '00000000-0000-0000-0000-000000000106',
         'PAYMENT_FAILED',
         'Thanh toán thất bại - {{paymentCode}}',
-        'Thanh toán {{paymentCode}} chưa thành công. Vui lòng thử lại.'
+        'Xin chào {{customerName}},
+
+Thanh toán {{paymentCode}} chưa thành công.
+Booking: {{bookingCode}}
+Số tiền: {{amount}}
+Lý do: {{reason}}
+
+Vui lòng thử lại hoặc liên hệ rạp nếu cần hỗ trợ.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000107',
+        'PAYMENT_REFUND_REQUIRED',
+        'Thông báo hoàn tiền - {{bookingCode}}',
+        'Xin chào {{customerName}},
+
+Giao dịch {{paymentCode}} cho booking {{bookingCode}} đang được xử lý hoàn tiền.
+Số tiền: {{amount}}
+Lý do: {{reason}}.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000108',
+        'SEAT_HOLD_CREATED',
+        'Bạn đang giữ ghế - {{holdToken}}',
+        'Xin chào {{customerName}},
+
+Bạn đang giữ ghế với mã giữ chỗ {{holdToken}}.
+Thời gian hết hạn: {{expiresAt}}.
+Vui lòng hoàn tất thanh toán trước khi hết hạn để xác nhận vé.'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000109',
+        'SEAT_HOLD_EXPIRED',
+        'Mã giữ ghế đã hết hạn - {{holdToken}}',
+        'Xin chào {{customerName}},
+
+Mã giữ chỗ {{holdToken}} đã hết hạn. Các ghế trong lượt giữ này đã được mở lại cho người dùng khác.'
     )
     ON CONFLICT (code) DO NOTHING;
 

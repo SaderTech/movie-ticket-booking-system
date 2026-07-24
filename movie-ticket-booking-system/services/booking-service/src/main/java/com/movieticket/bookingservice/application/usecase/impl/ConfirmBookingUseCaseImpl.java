@@ -445,7 +445,7 @@ public class ConfirmBookingUseCaseImpl {
                     .collect(Collectors.toList());
 
             BookingAggregate aggregate = BookingAggregate.forNewConfirm(seatHold, booking, payment, saga);
-            aggregate.confirmBooking(tickets);
+            aggregate.confirmBooking(tickets, finalMovieTitle, finalShowDate, finalStartTime);
 
             try {
                 booking = bookingRepository.save(aggregate.getBooking());

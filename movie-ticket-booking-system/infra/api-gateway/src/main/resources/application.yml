@@ -13,10 +13,27 @@ spring:
   cloud:
     gateway:
       routes:
+        # Authentication happens before a user ID exists, so this quota is by client IP.
+        # 30 tokens / 6 tokens per request = an initial burst of 5 requests,
+        # then approximately 10 requests per minute for the same IP.
+        - id: auth-service-route
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 6
+                key-resolver: "#{@clientIpKeyResolver}"
+                deny-empty-key: false
+
         - id: user-service-route
           uri: lb://USER-SERVICE
           predicates:
-            - Path=/api/users/**,/api/auth/**
+            - Path=/api/users/**
           filters:
             - StripPrefix=0
 
@@ -31,7 +48,7 @@ spring:
                 redis-rate-limiter.replenishRate: 2
                 redis-rate-limiter.burstCapacity: 5
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@keyResolver}"
+                key-resolver: "#{@userOrClientKeyResolver}"
                 deny-empty-key: false
             - name: CircuitBreaker
               args:
@@ -49,6 +66,13 @@ spring:
             - Path=/api/cinemas/**,/api/halls/**,/api/seats/**,/api/seat-types/**,/api/hall-maintenances/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrClientKeyResolver}"
+                deny-empty-key: false
             - name: CircuitBreaker
               args:
                 name: cinemaServiceCircuitBreaker
@@ -65,6 +89,13 @@ spring:
             - Path=/api/showtimes/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrClientKeyResolver}"
+                deny-empty-key: false
             - name: CircuitBreaker
               args:
                 name: showtimeServiceCircuitBreaker
@@ -81,6 +112,13 @@ spring:
             - Path=/api/bookings/**,/api/admin/booking-settings/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 4
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrClientKeyResolver}"
+                deny-empty-key: false
 
         - id: notification-service-route
           uri: lb://NOTIFICATION-SERVICE
