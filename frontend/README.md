@@ -90,7 +90,7 @@ Khi VNPay quay lại, frontend gửi nguyên vẹn query parameters tới `GET /
 - Không có API quên mật khẩu, đăng nhập Google hoặc upload ảnh; avatar/poster chỉ nhận URL.
 - Không có API danh sách ghế đã giữ/đã bán theo suất chiếu. Sơ đồ chỉ hiển thị trạng thái tĩnh của ghế; xung đột được kiểm tra khi gọi hold API.
 - Booking có thể tính giá khác `showtime.price`; frontend chỉ coi giá suất chiếu là tạm tính và dùng `totalAmount` từ Booking API làm số tiền chính thức.
-- Mã nguồn booking hiện tại chỉ chấp nhận `VNPAY` khi confirm. MOCK được hiển thị vô hiệu hóa trong môi trường dev để không gửi request chắc chắn thất bại.
+- Mã nguồn booking hiện tại chỉ hỗ trợ thanh toán qua `VNPAY` khi confirm.
 - Một số ticket có thể thiếu metadata phim, rạp hoặc phòng; giao diện dùng giá trị fallback và không hiển thị `undefined`.
 - Không có API danh sách mọi booking cho admin, doanh thu hoặc thống kê bán vé; dashboard không tạo số liệu giả.
 - Không có API quản lý role. Trang người dùng không hiển thị cột role hoặc chức năng cấp quyền.

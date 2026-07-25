@@ -1,11 +1,12 @@
 package com.movieticket.bookingservice.application.usecase.impl;
 
 import com.movieticket.bookingservice.api.dto.SeatAvailabilityResponse;
+import com.movieticket.bookingservice.application.usecase.GetSeatAvailabilityUseCase;
 import com.movieticket.bookingservice.domain.enums.BookingSeatStatus;
 import com.movieticket.bookingservice.domain.enums.TicketStatus;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaSeatHoldRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
+import com.movieticket.bookingservice.domain.repository.BookingRepository;
+import com.movieticket.bookingservice.domain.repository.SeatHoldRepository;
+import com.movieticket.bookingservice.domain.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,11 +18,11 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class GetSeatAvailabilityUseCaseImpl {
+public class GetSeatAvailabilityUseCaseImpl implements GetSeatAvailabilityUseCase {
 
-    private final JpaSeatHoldRepository seatHoldRepository;
-    private final JpaTicketRepository ticketRepository;
-    private final JpaBookingRepository bookingRepository;
+    private final SeatHoldRepository seatHoldRepository;
+    private final TicketRepository ticketRepository;
+    private final BookingRepository bookingRepository;
 
     @Transactional(readOnly = true)
     public SeatAvailabilityResponse findByShowtimeId(Long showtimeId) {

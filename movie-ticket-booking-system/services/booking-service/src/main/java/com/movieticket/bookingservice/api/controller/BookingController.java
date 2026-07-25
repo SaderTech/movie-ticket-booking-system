@@ -6,7 +6,7 @@ import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.application.command.CancelBookingCommand;
 import com.movieticket.bookingservice.application.command.ConfirmBookingCommand;
 import com.movieticket.bookingservice.application.command.HoldSeatsCommand;
-import com.movieticket.bookingservice.application.usecase.impl.*;
+import com.movieticket.bookingservice.application.usecase.*;
 import com.movieticket.bookingservice.infrastructure.client.MovieClient;
 import com.movieticket.bookingservice.infrastructure.security.BookingContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,13 +26,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BookingController {
 
-    private final HoldSeatsUseCaseImpl holdSeatsUseCase;
-    private final ReleaseSeatHoldUseCaseImpl releaseSeatHoldUseCase;
-    private final ConfirmBookingUseCaseImpl confirmBookingUseCase;
-    private final CancelBookingUseCaseImpl cancelBookingUseCase;
-    private final GetBookingUseCaseImpl getBookingUseCase;
-    private final GetMyBookingsUseCaseImpl getMyBookingsUseCase;
-    private final GetSeatAvailabilityUseCaseImpl getSeatAvailabilityUseCase;
+    private final HoldSeatsUseCase holdSeatsUseCase;
+    private final ReleaseSeatHoldUseCase releaseSeatHoldUseCase;
+    private final ConfirmBookingUseCase confirmBookingUseCase;
+    private final CancelBookingUseCase cancelBookingUseCase;
+    private final GetBookingUseCase getBookingUseCase;
+    private final GetMyBookingsUseCase getMyBookingsUseCase;
+    private final GetSeatAvailabilityUseCase getSeatAvailabilityUseCase;
     private final BookingContext bookingContext;
     private final MovieClient movieClient;
 

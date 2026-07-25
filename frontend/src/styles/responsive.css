@@ -154,10 +154,10 @@
   .account-header h1 { font-size: 1.7rem; }
   .account-header p { font-size: .8rem; }
   .account-nav { margin-inline: -.15rem; }
-  .booking-progress { margin-bottom: 2rem; }
-  .booking-progress > div strong { max-width: 64px; font-size: .58rem; }
-  .booking-progress > div span { width: 32px; height: 32px; }
-  .booking-progress > div::before { top: 15px; }
+  .booking-progress-area { margin-bottom: 2rem; }
+  .booking-progress > button strong { max-width: 64px; font-size: .58rem; }
+  .booking-progress > button span { width: 32px; height: 32px; }
+  .booking-progress > button::before { top: 15px; }
   .booking-heading { gap: 1rem; }
   .booking-heading h1 { font-size: 3rem; }
   .seat-panel { padding: .8rem; }
@@ -211,7 +211,7 @@
   .card-actions .button { min-height: 34px; font-size: .72rem; }
   .showtime-button { min-width: 100%; }
   .schedule-movie .showtime-button { min-width: 100%; }
-  .booking-progress > div strong { font-size: .52rem; }
+  .booking-progress > button strong { font-size: .52rem; }
   .booking-context { grid-template-columns: 54px 1fr; }
   .booking-context > img { width: 54px; }
   .ticket-actions { flex-direction: column; }

@@ -2,10 +2,11 @@ package com.movieticket.bookingservice.application.usecase.impl;
 
 import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
+import com.movieticket.bookingservice.application.usecase.ReleaseSeatHoldUseCase;
 import com.movieticket.bookingservice.domain.entity.SeatHold;
 import com.movieticket.bookingservice.domain.enums.SeatHoldStatus;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaSeatHoldRepository;
+import com.movieticket.bookingservice.domain.repository.BookingRepository;
+import com.movieticket.bookingservice.domain.repository.SeatHoldRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +15,10 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-public class ReleaseSeatHoldUseCaseImpl {
+public class ReleaseSeatHoldUseCaseImpl implements ReleaseSeatHoldUseCase {
 
-    private final JpaSeatHoldRepository seatHoldRepository;
-    private final JpaBookingRepository bookingRepository;
+    private final SeatHoldRepository seatHoldRepository;
+    private final BookingRepository bookingRepository;
 
     /**
      * Releases a hold abandoned before payment begins. The operation is

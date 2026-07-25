@@ -4,6 +4,7 @@ import com.movieticket.bookingservice.api.dto.HoldSeatsResponse;
 import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.application.command.HoldSeatsCommand;
+import com.movieticket.bookingservice.application.usecase.HoldSeatsUseCase;
 import com.movieticket.bookingservice.domain.entity.BookingEventOutbox;
 import com.movieticket.bookingservice.domain.entity.BookingSetting;
 import com.movieticket.bookingservice.domain.entity.SeatHold;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.movieticket.bookingservice.domain.entity.IdempotencyRecord;
 import com.movieticket.bookingservice.domain.enums.IdempotencyStatus;
 import com.movieticket.bookingservice.domain.vo.HoldToken;
+import com.movieticket.bookingservice.domain.repository.*;
 import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
 import com.movieticket.bookingservice.infrastructure.client.MovieClient;
 import com.movieticket.bookingservice.infrastructure.client.SeatClient;
@@ -24,7 +26,6 @@ import com.movieticket.bookingservice.infrastructure.client.dto.CinemaResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.MovieResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.SeatResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.ShowtimeResponse;
-import com.movieticket.bookingservice.infrastructure.jpa.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -45,14 +46,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class HoldSeatsUseCaseImpl {
+public class HoldSeatsUseCaseImpl implements HoldSeatsUseCase {
 
-    private final JpaBookingRepository bookingRepository;
-    private final JpaSeatHoldRepository seatHoldRepository;
-    private final JpaTicketRepository ticketRepository;
-    private final JpaBookingEventOutboxRepository outboxRepository;
-    private final JpaBookingSettingRepository bookingSettingRepository;
-    private final JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    private final BookingRepository bookingRepository;
+    private final SeatHoldRepository seatHoldRepository;
+    private final TicketRepository ticketRepository;
+    private final BookingEventOutboxRepository outboxRepository;
+    private final BookingSettingRepository bookingSettingRepository;
+    private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final RedissonClient redissonClient;
     private final ShowtimeClient showtimeClient;
     private final MovieClient movieClient;

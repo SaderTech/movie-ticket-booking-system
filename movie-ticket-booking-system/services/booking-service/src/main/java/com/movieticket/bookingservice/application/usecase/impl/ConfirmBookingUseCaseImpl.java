@@ -5,14 +5,16 @@ import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.api.exception.ErrorCode;
 import com.movieticket.bookingservice.application.command.ConfirmBookingCommand;
 import com.movieticket.bookingservice.application.mapper.BookingResponseMapper;
+import com.movieticket.bookingservice.application.usecase.ConfirmBookingUseCase;
 import com.movieticket.bookingservice.domain.aggregate.BookingAggregate;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
 import com.movieticket.bookingservice.domain.event.BookingCancelledEvent;
 import com.movieticket.bookingservice.domain.event.PaymentRefundRequiredEvent;
 import com.movieticket.bookingservice.domain.vo.BookingCode;
-import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
+import com.movieticket.bookingservice.domain.repository.*;
 import com.movieticket.bookingservice.infrastructure.adapter.VnPayUtil;
+import com.movieticket.bookingservice.infrastructure.adapter.PaymentAdapter;
 import com.movieticket.bookingservice.infrastructure.client.CinemaClient;
 import com.movieticket.bookingservice.infrastructure.client.MovieClient;
 import com.movieticket.bookingservice.infrastructure.client.SeatClient;
@@ -21,7 +23,6 @@ import com.movieticket.bookingservice.infrastructure.client.dto.CinemaResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.MovieResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.SeatResponse;
 import com.movieticket.bookingservice.infrastructure.client.dto.ShowtimeResponse;
-import com.movieticket.bookingservice.infrastructure.jpa.*;
 import com.movieticket.bookingservice.infrastructure.publisher.DomainEventPublisherImpl;
 import com.movieticket.bookingservice.infrastructure.security.BookingContext;
 
@@ -54,23 +55,23 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ConfirmBookingUseCaseImpl {
+public class ConfirmBookingUseCaseImpl implements ConfirmBookingUseCase {
 
-    private final JpaSeatHoldRepository seatHoldRepository;
-    private final JpaBookingRepository bookingRepository;
-    private final JpaTicketRepository ticketRepository;
-    private final JpaPaymentRepository paymentRepository;
-    private final JpaSagaTransactionRepository sagaTransactionRepository;
+    private final SeatHoldRepository seatHoldRepository;
+    private final BookingRepository bookingRepository;
+    private final TicketRepository ticketRepository;
+    private final PaymentRepository paymentRepository;
+    private final SagaTransactionRepository sagaTransactionRepository;
     private final DomainEventPublisherImpl domainEventPublisher;
     private final PaymentAdapter paymentAdapter;
-    private final JpaBookingSettingRepository bookingSettingRepository;
+    private final BookingSettingRepository bookingSettingRepository;
     private final ShowtimeClient showtimeClient;
     private final MovieClient movieClient;
     private final CinemaClient cinemaClient;
     private final SeatClient seatClient;
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
-    private final JpaIdempotencyRecordRepository idempotencyRecordRepository;
+    private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final BookingContext bookingContext;
 
     private static final String SETTING_LOCK_WAIT = "lock_wait_time_seconds";
@@ -216,7 +217,7 @@ public class ConfirmBookingUseCaseImpl {
         payment = paymentRepository.save(payment);
 
         String ipAddress = command.getIpAddress() != null ? command.getIpAddress() : "127.0.0.1";
-        String paymentUrl = paymentAdapter.createPaymentUrl(booking, payment, ipAddress, command.getReturnUrl());
+            String paymentUrl = paymentAdapter.createPaymentUrl(booking, payment, ipAddress, command.getReturnUrl());
 
         int holdPaymentExtension = getIntSetting(SETTING_HOLD_PAYMENT_EXTENSION, DEFAULT_HOLD_PAYMENT_EXTENSION);
         seatHold.extendExpiry(holdPaymentExtension);
@@ -357,7 +358,7 @@ public class ConfirmBookingUseCaseImpl {
             LocalTime startTime;
             LocalTime endTime;
             try {
-                ShowtimeResponse showtimeData = showtimeClient.getShowtime(bkShowtimeId);
+            ShowtimeResponse showtimeData = showtimeClient.getShowtime(bkShowtimeId);
                 movieId = showtimeData.movieId();
                 cinemaId = showtimeData.cinemaId();
                 hallId = showtimeData.roomId();
@@ -378,7 +379,7 @@ public class ConfirmBookingUseCaseImpl {
             String moviePosterUrl = null;
             if (movieId != null) {
                 try {
-                    MovieResponse movieData = movieClient.getMovie(movieId);
+            MovieResponse movieData = movieClient.getMovie(movieId);
                     movieTitle = movieData.title();
                     moviePosterUrl = movieData.posterUrl();
                 } catch (Exception e) {
@@ -389,7 +390,7 @@ public class ConfirmBookingUseCaseImpl {
             String cinemaName = null;
             if (cinemaId != null) {
                 try {
-                    CinemaResponse cinemaData = cinemaClient.getCinema(cinemaId);
+            CinemaResponse cinemaData = cinemaClient.getCinema(cinemaId);
                     cinemaName = cinemaData.name();
                 } catch (Exception e) {
                     log.warn("Could not fetch cinema details: {}", e.getMessage());

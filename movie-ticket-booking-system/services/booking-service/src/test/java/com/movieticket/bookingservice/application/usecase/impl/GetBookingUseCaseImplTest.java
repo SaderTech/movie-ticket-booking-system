@@ -4,9 +4,9 @@ import com.movieticket.bookingservice.api.dto.BookingResponse;
 import com.movieticket.bookingservice.api.exception.ApiException;
 import com.movieticket.bookingservice.domain.entity.*;
 import com.movieticket.bookingservice.domain.enums.*;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaBookingRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaPaymentRepository;
-import com.movieticket.bookingservice.infrastructure.jpa.JpaTicketRepository;
+import com.movieticket.bookingservice.domain.repository.BookingRepository;
+import com.movieticket.bookingservice.domain.repository.PaymentRepository;
+import com.movieticket.bookingservice.domain.repository.TicketRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,9 +24,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class GetBookingUseCaseImplTest {
 
-    @Mock private JpaBookingRepository bookingRepository;
-    @Mock private JpaTicketRepository ticketRepository;
-    @Mock private JpaPaymentRepository paymentRepository;
+    @Mock private BookingRepository bookingRepository;
+    @Mock private TicketRepository ticketRepository;
+    @Mock private PaymentRepository paymentRepository;
 
     @InjectMocks
     private GetBookingUseCaseImpl useCase;
